@@ -1,203 +1,193 @@
 mod shaders;
+mod mesh;
+mod device;
+mod allocations;
+mod buffers;
+mod rendering;
+mod pipeline;
+mod command_buffers;
 
 use std::sync::Arc;
 use image::{ImageBuffer, Rgba};
 use vulkano::buffer::{Buffer, BufferContents, BufferCreateInfo, BufferUsage, Subbuffer};
 use vulkano::command_buffer::allocator::{StandardCommandBufferAllocator, StandardCommandBufferAllocatorCreateInfo};
-use vulkano::command_buffer::{AutoCommandBufferBuilder, ClearColorImageInfo, CommandBufferUsage, CopyImageToBufferInfo};
+use vulkano::command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, CopyImageToBufferInfo, SubpassEndInfo};
 use vulkano::device::{Device, DeviceCreateInfo, Queue, QueueCreateInfo, QueueFlags};
 use vulkano::device::physical::PhysicalDevice;
 use vulkano::instance::{Instance, InstanceCreateInfo};
 use vulkano::memory::allocator::{AllocationCreateInfo, MemoryTypeFilter, StandardMemoryAllocator};
-use vulkano::{sync, VulkanLibrary};
+use vulkano::{swapchain, sync, Validated, VulkanError, VulkanLibrary};
 use vulkano::descriptor_set::allocator::StandardDescriptorSetAllocator;
 use vulkano::descriptor_set::{PersistentDescriptorSet, WriteDescriptorSet};
-use vulkano::format::{ClearColorValue, Format};
+use vulkano::format::Format;
 use vulkano::image::{Image, ImageCreateInfo, ImageType, ImageUsage};
 use vulkano::image::view::ImageView;
 use vulkano::pipeline::layout::PipelineDescriptorSetLayoutCreateInfo;
 use vulkano::pipeline::{ComputePipeline, Pipeline, PipelineBindPoint, PipelineLayout, PipelineShaderStageCreateInfo};
 use vulkano::pipeline::compute::ComputePipelineCreateInfo;
+use vulkano::pipeline::graphics::viewport::Viewport;
+use vulkano::render_pass::{Framebuffer, FramebufferCreateInfo, RenderPass};
+use vulkano::shader::spirv::Instruction::GroupNonUniformAllEqual;
+use vulkano::swapchain::{Surface, Swapchain, SwapchainAcquireFuture, SwapchainCreateInfo, SwapchainPresentInfo};
 use vulkano::sync::GpuFuture;
+use winit::dpi::{LogicalSize, Size};
+use winit::event::{Event, WindowEvent};
+use winit::event_loop::{ControlFlow, EventLoop};
+use winit::window::{Theme, WindowBuilder};
+use crate::allocations::MemoryAllocators;
+use crate::buffers::{create_framebuffers, create_image_return_buffer, create_iter_buffer, create_2d_image, create_vertex_buffer};
+use crate::command_buffers::get_command_buffers;
+use crate::device::{get_device, get_physical_device, get_preferred_family_index};
+use crate::pipeline::get_render_pipeline;
+use crate::rendering::{get_render_pass, render_pass_begin_info, subpass_begin_info};
+use crate::mesh::get_model_vertices;
 
 #[macro_use]
 extern crate log;
 
-fn get_physical_device(instance: Arc<Instance>) -> Arc<PhysicalDevice> {
-    return instance
-        .enumerate_physical_devices()
-        .unwrap()
-        .next()
-        .unwrap();
-}
-
-fn get_preferred_family_index(physical_device: &Arc<PhysicalDevice>) -> u32 {
-    return physical_device
-        .queue_family_properties()
-        .iter()
-        .enumerate()
-        .position(|(_queue_family_index, queue_family_properties)| {
-            queue_family_properties.queue_flags.contains(QueueFlags::GRAPHICS)
-        })
-        .expect("couldn't find a graphical queue family") as u32;
-}
-
-fn get_device(physical_device: Arc<PhysicalDevice>, queue_family_index: u32) -> (Arc<Device>, impl ExactSizeIterator<Item=Arc<Queue>>) {
-    return Device::new(
-        physical_device,
-        DeviceCreateInfo {
-            queue_create_infos: vec![QueueCreateInfo {
-                queue_family_index,
-                ..Default::default()
-            }],
-            ..Default::default()
-        },
-    ).unwrap();
-}
-
-fn get_memory_allocator(device: Arc<Device>) -> Arc<StandardMemoryAllocator> {
-    return Arc::new(StandardMemoryAllocator::new_default(device));
-}
-
-fn get_command_buffer_allocator(device: Arc<Device>) -> StandardCommandBufferAllocator {
-    return StandardCommandBufferAllocator::new(device, StandardCommandBufferAllocatorCreateInfo::default());
-}
-
-fn get_descriptor_set_allocator(device: Arc<Device>) -> StandardDescriptorSetAllocator {
-    return StandardDescriptorSetAllocator::new(device, Default::default());
-}
-
-fn create_iter_buffer<T, I>(source: I, allocator: Arc<StandardMemoryAllocator>, usage: BufferUsage, memory_type_filter: MemoryTypeFilter) -> Subbuffer<[T]>
-    where T: BufferContents,
-          I: IntoIterator<Item=T>,
-          I::IntoIter: ExactSizeIterator
-{
-    return Buffer::from_iter(
-        allocator,
-        BufferCreateInfo {
-            usage,
-            ..Default::default()
-        },
-        AllocationCreateInfo {
-            memory_type_filter,
-            ..Default::default()
-        },
-        source,
-    ).unwrap();
-}
-
-fn create_data_buffer<T: BufferContents>(source: T, allocator: Arc<StandardMemoryAllocator>, usage: BufferUsage, memory_type_filter: MemoryTypeFilter) -> Subbuffer<T> {
-    return Buffer::from_data(
-        allocator,
-        BufferCreateInfo {
-            usage,
-            ..Default::default()
-        },
-        AllocationCreateInfo {
-            memory_type_filter,
-            ..Default::default()
-        },
-        source,
-    ).unwrap();
-}
-
 
 pub fn vr_render_main() {
-    let library = VulkanLibrary::new().expect("vulkan not installed");
-    let instance = Instance::new(library, InstanceCreateInfo::default())
-        .expect("failed to create instance");
+    let event_loop = EventLoop::new().unwrap();
 
-    let physical_device = get_physical_device(instance);
+    let library = VulkanLibrary::new().expect("vulkan not installed");
+    let required_extensions = Surface::required_extensions(&event_loop);
+    let instance = Instance::new(library, InstanceCreateInfo {
+        enabled_extensions: required_extensions,
+        ..Default::default()
+    }).expect("failed to create instance");
+
+
+    let window = Arc::new(
+        WindowBuilder::new()
+            .with_theme(Some(Theme::Dark))
+            .with_title("ftVR Preview")
+            .with_resizable(false)
+            .with_inner_size(LogicalSize::new(2*240, 240))
+            .build(&event_loop)
+            .unwrap()
+    );
+
+    let surface = Surface::from_window(instance.clone(), window.clone()).unwrap();
+
+    let physical_device = get_physical_device(instance.clone());
     info!("Using Vulkan V{:?}", physical_device.api_version());
 
     let queue_family_index = get_preferred_family_index(&physical_device);
-    let (device, mut queues) = get_device(physical_device, queue_family_index);
+    let (device, mut queues) = get_device(physical_device.clone(), queue_family_index);
     let queue = queues.next().unwrap();
 
-    /// ALLOCATION ///
-    let gpu_allocator = get_memory_allocator(device.clone());
-    let command_buffer_allocator = get_command_buffer_allocator(device.clone());
-    let descriptor_set_allocator = get_descriptor_set_allocator(device.clone());
+    let caps = physical_device.clone()
+        .surface_capabilities(&surface, Default::default())
+        .expect("failed to get surface capabilities");
+
+    let dimensions = window.inner_size();
+    let composite_alpha = caps.supported_composite_alpha.into_iter().next().unwrap();
+    let image_format = physical_device.clone()
+        .surface_formats(&surface, Default::default())
+        .unwrap()[0]
+        .0;
 
 
-    /// BUFFERS/IMAGES ///
-
-    let image = Image::new(
-        gpu_allocator.clone(),
-        ImageCreateInfo {
-            image_type: ImageType::Dim2d,
-            format: Format::R8G8B8A8_UNORM,
-            extent: [1024, 1024, 1],
-            usage: ImageUsage::STORAGE | ImageUsage::TRANSFER_SRC,
-            ..Default::default()
-        },
-        AllocationCreateInfo {
-            memory_type_filter: MemoryTypeFilter::PREFER_DEVICE,
-            ..Default::default()
-        },
-    ).unwrap();
-
-    let view = ImageView::new_default(image.clone()).unwrap();
-
-    let buf = create_iter_buffer((0..1024 * 1024 * 4).map(|_| 0u8), gpu_allocator.clone(), BufferUsage::TRANSFER_DST, MemoryTypeFilter::PREFER_HOST | MemoryTypeFilter::HOST_RANDOM_ACCESS);
-
-    /// PIPELINE BUILDING ///
-
-    let shader = shaders::multiplier::load(device.clone()).unwrap();
-    let entrypoint = shader.entry_point("main").unwrap();
-    let stage = PipelineShaderStageCreateInfo::new(entrypoint);
-    let layout = PipelineLayout::new(
+    let (mut swapchain, images) = Swapchain::new(
         device.clone(),
-        PipelineDescriptorSetLayoutCreateInfo::from_stages([&stage])
-            .into_pipeline_layout_create_info(device.clone()).unwrap(),
+        surface.clone(),
+        SwapchainCreateInfo {
+            min_image_count: caps.min_image_count + 1,
+            image_format,
+            image_extent: dimensions.into(),
+            image_usage: ImageUsage::COLOR_ATTACHMENT,
+            composite_alpha,
+            ..Default::default()
+        },
     ).unwrap();
 
-    let compute_pipeline = ComputePipeline::new(device.clone(), None, ComputePipelineCreateInfo::stage_layout(stage, layout)).unwrap();
 
-    let pipeline_layout = compute_pipeline.layout();
-    let descriptor_set_layouts = pipeline_layout.set_layouts();
+    let alloc = MemoryAllocators::new(device.clone());
 
-    let descriptor_set_layout_index = 0;
-    let descriptor_set_layout = descriptor_set_layouts.get(descriptor_set_layout_index).unwrap();
-    let descriptor_set = PersistentDescriptorSet::new(
-        &descriptor_set_allocator,
-        descriptor_set_layout.clone(),
-        [WriteDescriptorSet::image_view(0, view.clone())],
-        [],
-    ).unwrap();
+    // BUFFERS/IMAGES //
 
-    /// SETTING COMMANDS ///
+    let vertex_buffer = create_vertex_buffer(&alloc, get_model_vertices());
 
-    let mut buffer_builder = AutoCommandBufferBuilder::primary(
-        &command_buffer_allocator,
-        queue_family_index,
-        CommandBufferUsage::OneTimeSubmit,
-    ).unwrap();
+    // PIPELINE BUILDING //
 
-    buffer_builder
-        .bind_pipeline_compute(compute_pipeline.clone()).unwrap()
-        .bind_descriptor_sets(PipelineBindPoint::Compute, compute_pipeline.layout().clone(), 0, descriptor_set).unwrap()
-        .dispatch([1024 / 8, 1024 / 8, 1]).unwrap()
-        .copy_image_to_buffer(CopyImageToBufferInfo::image_buffer(image.clone(), buf.clone()))
-        .unwrap();
+    let viewport = Viewport {
+        offset: [0.0, 0.0],
+        extent: [2.0*240.0, 240.0],
+        depth_range: 0.0..=1.0,
+    };
 
-    let command_buffer = buffer_builder.build().unwrap();
+    let render_pass = get_render_pass(&device, &swapchain);
+    let pipeline = get_render_pipeline(device.clone(), render_pass.clone(), viewport);
+    let framebuffers = create_framebuffers(render_pass.clone(), images);
 
-    /// EXECUTION ///
+    let command_buffers = get_command_buffers(&alloc, &queue, &pipeline, &framebuffers, &vertex_buffer);
 
-    let future = sync::now(device.clone())
-        .then_execute(queue.clone(), command_buffer)
-        .unwrap()
-        .then_signal_fence_and_flush()
-        .unwrap();
+    // EXECUTION //
 
-    future.wait(None).unwrap();
+    info!("Start operation");
 
-    info!("Done with GPU operation");
 
-    let buffer_content = buf.read().unwrap();
-    let image = ImageBuffer::<Rgba<u8>, _>::from_raw(1024, 1024, &buffer_content[..]).unwrap();
-    image.save("image.png").unwrap();
+    let mut recreate_swapchain = true;
+    event_loop.run(|event, elwt| {
+        match event {
+            Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => {
+                info!("Goodbye!");
+                elwt.exit();
+            }
+            Event::AboutToWait => {
+                if recreate_swapchain {
+                    recreate_swapchain = false;
 
-    info!("Saved image");
+                    let new_dimensions = window.inner_size();
+                    let (new_swapchain, new_images) = swapchain
+                        .recreate(SwapchainCreateInfo {
+                            image_extent: new_dimensions.into(),
+                            ..swapchain.create_info()
+                        })
+                        .expect("failed to recreate swapchain: {e}");
+                    swapchain = new_swapchain;
+                }
+
+                window.request_redraw()
+            }
+            Event::WindowEvent { event: WindowEvent::RedrawRequested, .. } => {
+                let (image_i, suboptimal, acquire_future) = match swapchain::acquire_next_image(swapchain.clone(), None).map_err(Validated::unwrap) {
+                    Ok(r) => r,
+                    Err(VulkanError::OutOfDate) => {
+                        recreate_swapchain = true;
+                        return;
+                    }
+                    Err(e) => panic!("failed to acquire next image: {e}")
+                };
+
+                if suboptimal {
+                    recreate_swapchain = true;
+                }
+
+                let execution = sync::now(device.clone())
+                    .join(acquire_future)
+                    .then_execute(queue.clone(), command_buffers[image_i as usize].clone())
+                    .unwrap()
+                    .then_swapchain_present(
+                        queue.clone(),
+                        SwapchainPresentInfo::swapchain_image_index(swapchain.clone(), image_i),
+                    )
+                    .then_signal_fence_and_flush();
+
+                match execution.map_err(Validated::unwrap) {
+                    Ok(future) => {
+                        // Wait for the GPU to finish.
+                        future.wait(None).unwrap();
+                    }
+                    Err(VulkanError::OutOfDate) => {
+                        recreate_swapchain = true;
+                    }
+                    Err(e) => {
+                        error!("failed to flush future: {e}");
+                    }
+                }
+            }
+            _ => ()
+        }
+    }).unwrap()
 }

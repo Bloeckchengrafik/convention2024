@@ -8,6 +8,7 @@ fn init_logging() {
     pretty_env_logger::formatted_timed_builder()
         .parse_default_env()
         .filter_level(LevelFilter::Trace)
+        .filter_module("calloop", LevelFilter::Info)
         .init();
 }
 
