@@ -8,10 +8,7 @@ mod pipeline;
 mod command_buffers;
 
 use std::sync::Arc;
-
-
-
-
+use image::{ImageBuffer, Rgba};
 
 
 use vulkano::instance::{Instance, InstanceCreateInfo};
@@ -19,23 +16,20 @@ use vulkano::instance::{Instance, InstanceCreateInfo};
 use vulkano::{swapchain, sync, Validated, VulkanError, VulkanLibrary};
 
 
-
 use vulkano::image::{ImageUsage};
-
-
 
 
 use vulkano::pipeline::graphics::viewport::Viewport;
 
 
-use vulkano::swapchain::{Surface, Swapchain, SwapchainCreateInfo, SwapchainPresentInfo};
+use vulkano::swapchain::{PresentMode, Surface, SurfaceInfo, Swapchain, SwapchainCreateInfo, SwapchainPresentInfo};
 use vulkano::sync::GpuFuture;
 use winit::dpi::{LogicalSize};
 use winit::event::{Event, WindowEvent};
 use winit::event_loop::{EventLoop};
 use winit::window::{Theme, WindowBuilder};
 use crate::allocations::MemoryAllocators;
-use crate::buffers::{create_framebuffers, create_vertex_buffer};
+use crate::buffers::{create_framebuffers, create_image_return_buffer, create_vertex_buffer};
 use crate::command_buffers::get_command_buffers;
 use crate::device::{get_device, get_physical_device, get_preferred_family_index};
 use crate::pipeline::get_render_pipeline;
@@ -62,7 +56,7 @@ pub fn vr_render_main() {
             .with_theme(Some(Theme::Dark))
             .with_title("ftVR Preview")
             .with_resizable(false)
-            .with_inner_size(LogicalSize::new(2*240, 240))
+            .with_inner_size(LogicalSize::new(2 * 240, 240))
             .build(&event_loop)
             .unwrap()
     );
@@ -83,7 +77,7 @@ pub fn vr_render_main() {
     let dimensions = window.inner_size();
     let composite_alpha = caps.supported_composite_alpha.into_iter().next().unwrap();
     let image_format = physical_device.clone()
-        .surface_formats(&surface, Default::default())
+        .surface_formats(&surface, SurfaceInfo::default())
         .unwrap()[0]
         .0;
 
@@ -95,7 +89,7 @@ pub fn vr_render_main() {
             min_image_count: caps.min_image_count + 1,
             image_format,
             image_extent: dimensions.into(),
-            image_usage: ImageUsage::COLOR_ATTACHMENT,
+            image_usage: ImageUsage::COLOR_ATTACHMENT | ImageUsage::TRANSFER_SRC,
             composite_alpha,
             ..Default::default()
         },
@@ -107,27 +101,36 @@ pub fn vr_render_main() {
     // BUFFERS/IMAGES //
 
     let vertex_buffer = create_vertex_buffer(&alloc, get_model_vertices());
+    let result_buffer = create_image_return_buffer(&alloc, 240 * 2, 240, 4);
 
     // PIPELINE BUILDING //
 
     let viewport = Viewport {
         offset: [0.0, 0.0],
-        extent: [2.0*240.0, 240.0],
+        extent: [2.0 * 240.0, 240.0],
         depth_range: 0.0..=1.0,
     };
 
     let render_pass = get_render_pass(&device, &swapchain);
-    let pipeline = get_render_pipeline(device.clone(), render_pass.clone(), viewport);
-    let framebuffers = create_framebuffers(render_pass.clone(), images);
+    let pipeline = get_render_pipeline(device.clone(), render_pass.clone(), viewport.clone());
+    let framebuffers = create_framebuffers(render_pass.clone(), images.clone());
 
-    let command_buffers = get_command_buffers(&alloc, &queue, &pipeline, &framebuffers, &vertex_buffer);
+    let command_buffers = get_command_buffers(
+        &alloc,
+        &queue,
+        &pipeline,
+        &framebuffers,
+        &vertex_buffer,
+        &images,
+        &result_buffer,
+    );
 
     // EXECUTION //
 
     info!("Start operation");
 
-
     let mut recreate_swapchain = true;
+    let mut save = true;
     event_loop.run(|event, elwt| {
         match event {
             Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => {
@@ -176,8 +179,16 @@ pub fn vr_render_main() {
 
                 match execution.map_err(Validated::unwrap) {
                     Ok(future) => {
-                        // Wait for the GPU to finish.
                         future.wait(None).unwrap();
+
+                        if save {
+                            save = false;
+                            let result = result_buffer.read().unwrap();
+
+                            let image = ImageBuffer::<Rgba<u8>, _>::from_raw(viewport.extent[0] as u32, viewport.extent[1] as u32, &result[..]).unwrap();
+                            image.save("image.png").unwrap();
+                            info!("Save concluded")
+                        }
                     }
                     Err(VulkanError::OutOfDate) => {
                         recreate_swapchain = true;
