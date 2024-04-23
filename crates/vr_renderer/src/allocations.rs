@@ -5,15 +5,15 @@ use vulkano::device::Device;
 use vulkano::memory::allocator::StandardMemoryAllocator;
 
 fn get_memory_allocator(device: Arc<Device>) -> Arc<StandardMemoryAllocator> {
-    return Arc::new(StandardMemoryAllocator::new_default(device));
+    Arc::new(StandardMemoryAllocator::new_default(device))
 }
 
 fn get_command_buffer_allocator(device: Arc<Device>) -> StandardCommandBufferAllocator {
-    return StandardCommandBufferAllocator::new(device, StandardCommandBufferAllocatorCreateInfo::default());
+    StandardCommandBufferAllocator::new(device, StandardCommandBufferAllocatorCreateInfo::default())
 }
 
 fn get_descriptor_set_allocator(device: Arc<Device>) -> StandardDescriptorSetAllocator {
-    return StandardDescriptorSetAllocator::new(device, Default::default());
+    StandardDescriptorSetAllocator::new(device, Default::default())
 }
 
 pub struct MemoryAllocators {

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use vulkano::buffer::Subbuffer;
-use vulkano::command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, CopyImageToBufferInfo, PrimaryAutoCommandBuffer, SubpassEndInfo};
+use vulkano::command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, PrimaryAutoCommandBuffer, SubpassEndInfo};
 use vulkano::device::Queue;
 use vulkano::pipeline::GraphicsPipeline;
 use vulkano::render_pass::Framebuffer;

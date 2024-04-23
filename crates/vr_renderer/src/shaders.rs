@@ -10,7 +10,7 @@ pub mod deform {
         }
 
         pub fn entrypoint(device: Arc<Device>) -> EntryPoint {
-            return load(device).unwrap().entry_point("main").unwrap();
+            load(device).unwrap().entry_point("main").unwrap()
         }
     }
 
@@ -24,7 +24,7 @@ pub mod deform {
         }
 
         pub fn entrypoint(device: Arc<Device>) -> EntryPoint {
-            return load(device).unwrap().entry_point("main").unwrap();
+            load(device).unwrap().entry_point("main").unwrap()
         }
     }
 }

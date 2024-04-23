@@ -8,38 +8,38 @@ mod pipeline;
 mod command_buffers;
 
 use std::sync::Arc;
-use image::{ImageBuffer, Rgba};
-use vulkano::buffer::{Buffer, BufferContents, BufferCreateInfo, BufferUsage, Subbuffer};
-use vulkano::command_buffer::allocator::{StandardCommandBufferAllocator, StandardCommandBufferAllocatorCreateInfo};
-use vulkano::command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, CopyImageToBufferInfo, SubpassEndInfo};
-use vulkano::device::{Device, DeviceCreateInfo, Queue, QueueCreateInfo, QueueFlags};
-use vulkano::device::physical::PhysicalDevice;
+
+
+
+
+
+
 use vulkano::instance::{Instance, InstanceCreateInfo};
-use vulkano::memory::allocator::{AllocationCreateInfo, MemoryTypeFilter, StandardMemoryAllocator};
+
 use vulkano::{swapchain, sync, Validated, VulkanError, VulkanLibrary};
-use vulkano::descriptor_set::allocator::StandardDescriptorSetAllocator;
-use vulkano::descriptor_set::{PersistentDescriptorSet, WriteDescriptorSet};
-use vulkano::format::Format;
-use vulkano::image::{Image, ImageCreateInfo, ImageType, ImageUsage};
-use vulkano::image::view::ImageView;
-use vulkano::pipeline::layout::PipelineDescriptorSetLayoutCreateInfo;
-use vulkano::pipeline::{ComputePipeline, Pipeline, PipelineBindPoint, PipelineLayout, PipelineShaderStageCreateInfo};
-use vulkano::pipeline::compute::ComputePipelineCreateInfo;
+
+
+
+use vulkano::image::{ImageUsage};
+
+
+
+
 use vulkano::pipeline::graphics::viewport::Viewport;
-use vulkano::render_pass::{Framebuffer, FramebufferCreateInfo, RenderPass};
-use vulkano::shader::spirv::Instruction::GroupNonUniformAllEqual;
-use vulkano::swapchain::{Surface, Swapchain, SwapchainAcquireFuture, SwapchainCreateInfo, SwapchainPresentInfo};
+
+
+use vulkano::swapchain::{Surface, Swapchain, SwapchainCreateInfo, SwapchainPresentInfo};
 use vulkano::sync::GpuFuture;
-use winit::dpi::{LogicalSize, Size};
+use winit::dpi::{LogicalSize};
 use winit::event::{Event, WindowEvent};
-use winit::event_loop::{ControlFlow, EventLoop};
+use winit::event_loop::{EventLoop};
 use winit::window::{Theme, WindowBuilder};
 use crate::allocations::MemoryAllocators;
-use crate::buffers::{create_framebuffers, create_image_return_buffer, create_iter_buffer, create_2d_image, create_vertex_buffer};
+use crate::buffers::{create_framebuffers, create_vertex_buffer};
 use crate::command_buffers::get_command_buffers;
 use crate::device::{get_device, get_physical_device, get_preferred_family_index};
 use crate::pipeline::get_render_pipeline;
-use crate::rendering::{get_render_pass, render_pass_begin_info, subpass_begin_info};
+use crate::rendering::{get_render_pass};
 use crate::mesh::get_model_vertices;
 
 #[macro_use]
@@ -139,7 +139,7 @@ pub fn vr_render_main() {
                     recreate_swapchain = false;
 
                     let new_dimensions = window.inner_size();
-                    let (new_swapchain, new_images) = swapchain
+                    let (new_swapchain, _new_images) = swapchain
                         .recreate(SwapchainCreateInfo {
                             image_extent: new_dimensions.into(),
                             ..swapchain.create_info()

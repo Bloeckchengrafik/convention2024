@@ -5,14 +5,14 @@ use vulkano::render_pass::{Framebuffer, RenderPass};
 use vulkano::swapchain::Swapchain;
 
 pub fn render_pass_begin_info(framebuffer: Arc<Framebuffer>) -> RenderPassBeginInfo {
-    return RenderPassBeginInfo {
+    RenderPassBeginInfo {
         clear_values: vec![Some([0.0, 0.0, 0.0, 1.0].into())],
         ..RenderPassBeginInfo::framebuffer(framebuffer)
     }
 }
 
 pub fn subpass_begin_info() -> SubpassBeginInfo {
-    return SubpassBeginInfo {
+    SubpassBeginInfo {
         contents: SubpassContents::Inline,
         ..Default::default()
     }

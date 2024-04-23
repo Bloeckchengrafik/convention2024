@@ -4,10 +4,10 @@ use vulkano::device::{Device, DeviceCreateInfo, DeviceExtensions, Queue, QueueCr
 use vulkano::instance::Instance;
 
 fn device_extensions() -> DeviceExtensions {
-    return DeviceExtensions {
+    DeviceExtensions {
         khr_swapchain: true,
         ..DeviceExtensions::empty()
-    };
+    }
 }
 
 pub fn get_physical_device(instance: Arc<Instance>) -> Arc<PhysicalDevice> {
@@ -15,9 +15,7 @@ pub fn get_physical_device(instance: Arc<Instance>) -> Arc<PhysicalDevice> {
 
     return instance
         .enumerate_physical_devices()
-        .unwrap()
-        .filter(|p| p.supported_extensions().contains(&device_extensions))
-        .next()
+        .unwrap().find(|p| p.supported_extensions().contains(&device_extensions))
         .unwrap();
 }
 
@@ -33,7 +31,7 @@ pub fn get_preferred_family_index(physical_device: &Arc<PhysicalDevice>) -> u32 
 }
 
 pub fn get_device(physical_device: Arc<PhysicalDevice>, queue_family_index: u32) -> (Arc<Device>, impl ExactSizeIterator<Item=Arc<Queue>>) {
-    return Device::new(
+    Device::new(
         physical_device,
         DeviceCreateInfo {
             queue_create_infos: vec![QueueCreateInfo {
@@ -43,5 +41,5 @@ pub fn get_device(physical_device: Arc<PhysicalDevice>, queue_family_index: u32)
             enabled_extensions: device_extensions(),
             ..Default::default()
         },
-    ).unwrap();
+    ).unwrap()
 }

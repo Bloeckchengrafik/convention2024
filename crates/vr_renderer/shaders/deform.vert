@@ -1,7 +1,7 @@
 #version 460
 
 layout (location = 0) in vec2 position;
-layout (location = 1) in uint32_t material;
+layout (location = 1) in uint material;
 
 void main() {
     if (material == 0) {
