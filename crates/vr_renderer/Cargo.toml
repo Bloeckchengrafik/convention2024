@@ -4,8 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-vulkano.workspace = true
-vulkano-shaders = "0.34.0"
 log.workspace = true
 image = "0.25.1"
-winit = { version = "0.29.15", features = ["rwh_05"] }

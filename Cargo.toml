@@ -3,7 +3,6 @@ members = ["crates/ft_vr", "crates/vr_renderer"]
 resolver = "2"
 
 [workspace.dependencies]
-vulkano = "0.34.1"
 log = "0.4.21"
 
 [profile.dev]

@@ -1,0 +1,6 @@
+pyzmq
+pillow
+opencv-contrib-python
+numpy
+pygame
+readchar
