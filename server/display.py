@@ -76,7 +76,7 @@ class DisplaySystem(threading.Thread):
         """
 
         pygame.init()
-        screen = pygame.display.set_mode((1920, 1080))
+        screen = pygame.display.set_mode((1280, 720), pygame.FULLSCREEN)
         pygame.display.set_caption("ftVR iodev")
         screen.fill((0, 0, 0))
         font = pygame.font.Font(None, 36)

@@ -1,6 +1,6 @@
 pyzmq
 pillow
-opencv-contrib-python
+opencv-python
 numpy
 pygame
 readchar

@@ -16,6 +16,8 @@ class InputHandler(threading.Thread):
         self.shift_correction = 0
 
     def run(self):
+        print("w/s: distance, a/d: shift correction, q: quit")
+        print(">", end=" ")
         while True:
             command = readchar()
             if command == "w":
@@ -39,7 +41,8 @@ right = cv2.imread("crates/vr_renderer/local-images/example_R.png")
 
 context = zmq.Context()
 socket = context.socket(zmq.REQ)
-socket.connect("tcp://localhost:3459")
+connect_to = os.environ.get("TO", "localhost")
+socket.connect(f"tcp://{connect_to}:3459")
 
 input_handler = InputHandler()
 input_handler.start()
@@ -68,4 +71,4 @@ while True:
     idx += 1
     if idx % 10 == 0:
         idx = 0
-        print(f"Builder: {(time_builder_after - time_builder_before) / 1_000_000:.2f}ms, Network: {(time_network_after - time_network_before) / 1_000_000:.2f}ms")
+    print(f"Builder: {(time_builder_after - time_builder_before) / 1_000_000:.2f}ms, Network: {(time_network_after - time_network_before) / 1_000_000:.2f}ms")

@@ -18,18 +18,19 @@ idx = 0
 while True:
     #  Wait for next request from client
     message = socket.recv()
+    print("Received request")
+    socket.send(b"Ok")
+
+    print("Sent response")
 
     if not Message.check(message):
         print("Invalid message")
-        socket.send(b"Invalid")
         continue
 
     time_before = time_ns()
     inst_time = msg.read(message)
     time_after = time_ns()
     msg.postprocess()
-
-    socket.send(b"Ok")
 
     display_system.set_cv_data(msg.left, msg.right, msg.between)
 
