@@ -9,6 +9,8 @@ fn init_logging() {
         .parse_default_env()
         .filter_level(LevelFilter::Trace)
         .filter_module("calloop", LevelFilter::Info)
+        .filter_module("naga", LevelFilter::Info)
+        .filter_module("wgpu", LevelFilter::Info)
         .init();
 }
 

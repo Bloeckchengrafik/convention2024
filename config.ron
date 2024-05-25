@@ -1,0 +1,12 @@
+(
+    left_eye: (
+        image_width: 350,
+        image_height: 350,
+    ),
+    right_eye: (
+        image_width: 350,
+        image_height: 350,
+    ),
+    v_offset: 0,
+    space_between: 0,
+)

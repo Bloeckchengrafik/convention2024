@@ -23,6 +23,8 @@ class DisplaySystem(threading.Thread):
         self.screen_clock = pygame.time.Clock()
         self.running = True
 
+        self.disconnected()
+
     def set_cv_data(self, left, right, distance):
         self.left = cvimage_to_pygame(left)
         self.right = cvimage_to_pygame(right)
@@ -96,3 +98,9 @@ class DisplaySystem(threading.Thread):
             self.screen_clock.tick(60)
         pygame.quit()
         os._exit(0)
+
+    def disconnected(self):
+        # show error message
+        self.left = None
+        self.right = None
+        self.distance = 300
