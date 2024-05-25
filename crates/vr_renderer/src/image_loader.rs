@@ -17,5 +17,5 @@ pub fn right_example() -> DynamicImage {
 }
 
 pub fn dynamic_to_ggez(ctx: &mut Context, image: DynamicImage) -> Image {
-    Image::from_pixels(ctx, image.clone().to_rgba8().as_bytes(), ImageFormat::Rgba8Unorm, image.width(), image.height())
+    Image::from_pixels(ctx, image.clone().to_rgba8().as_bytes(), ImageFormat::Rgba8UnormSrgb, image.width(), image.height())
 }

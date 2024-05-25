@@ -8,10 +8,12 @@ extern crate log;
 
 use ggez::{Context, GameError, GameResult};
 use ggez::conf::{FullscreenType, WindowMode, WindowSetup};
+use ggez::context::HasMut;
 use ggez::event::EventHandler;
 use ggez::graphics::{self, Image, Color, DrawParam, ImageFormat, Transform};
 use ggez::mint::{Point2, Vector2};
 use image::{EncodableLayout, GenericImageView};
+use screen_info::DisplayInfo;
 use crate::image_loader::{dynamic_to_ggez, left_example, right_example};
 use crate::image_post_processing::postprocess;
 use crate::render_settings::{config_has_changed, read_config, SettingsFrame};
@@ -102,6 +104,8 @@ pub fn vr_render_main() {
         .window_mode(
             WindowMode::default()
                 .dimensions(800.0, 480.0)
+                .borderless(true)
+                .fullscreen_type(FullscreenType::True)
                 .resizable(false)
         )
         .window_setup(

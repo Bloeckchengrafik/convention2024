@@ -9,3 +9,4 @@ ggez.workspace = true
 image = "0.25.1"
 serde = "1.0.202"
 ron = "0.8.1"
+screen-info = "0.0.1"

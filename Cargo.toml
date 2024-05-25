@@ -4,7 +4,7 @@ resolver = "2"
 
 [workspace.dependencies]
 log = "0.4.21"
-ggez = "0.9.3"
+ggez = { git = "https://github.com/Bloeckchengrafik/ggez.git", branch = "master" }
 
 [profile.dev]
 opt-level = 1

@@ -8,5 +8,5 @@
         image_height: 350,
     ),
     v_offset: 0,
-    space_between: 0,
+    space_between: 10,
 )
