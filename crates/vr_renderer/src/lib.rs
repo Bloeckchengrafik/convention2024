@@ -6,6 +6,7 @@ mod transform;
 #[macro_use]
 extern crate log;
 
+use std::time::SystemTime;
 use ggez::{Context, GameError, GameResult};
 use ggez::conf::{FullscreenType, WindowMode, WindowSetup};
 use ggez::context::HasMut;
@@ -13,10 +14,12 @@ use ggez::event::{EventHandler, EventLoop};
 use ggez::graphics::{self, Image, Color, DrawParam, ImageFormat, Transform};
 use ggez::mint::{Point2, Vector2};
 use image::{EncodableLayout, GenericImageView};
+use pub_sub::{PubSub, Subscription};
 use screen_info::DisplayInfo;
+use messages::VrMessage;
 use crate::image_loader::{dynamic_to_ggez, left_example, right_example};
 use crate::image_post_processing::postprocess;
-use crate::render_settings::{config_has_changed, read_config, SettingsFrame};
+use crate::render_settings::{config_has_changed, read_config, save_config, SettingsFrame};
 use crate::transform::TransformSet;
 
 pub struct ImagePair {
@@ -26,11 +29,13 @@ pub struct ImagePair {
 
 struct MainWindowState {
     lowest_level: ImagePair,
-    settings: SettingsFrame
+    settings: SettingsFrame,
+    msgbus: PubSub<VrMessage>,
+    subscription: Subscription<VrMessage>,
 }
 
 impl MainWindowState {
-    pub fn new(ctx: &mut Context) -> Self {
+    pub fn new(ctx: &mut Context, pub_sub: PubSub<VrMessage>) -> Self {
         let config = read_config();
 
         let left = postprocess(left_example(), &config.data.left_eye);
@@ -43,7 +48,9 @@ impl MainWindowState {
 
         MainWindowState {
             lowest_level,
-            settings: config
+            settings: config,
+            subscription: pub_sub.subscribe(),
+            msgbus: pub_sub,
         }
     }
 
@@ -64,6 +71,28 @@ impl MainWindowState {
             };
         }
     }
+
+    fn process_bus(&mut self) {
+        loop {
+            let message = self.subscription.try_recv();
+            if message.is_err() {
+                break;
+            }
+
+            let message = message.unwrap();
+
+            match message {
+                VrMessage::VrDistanceConfiguration { distance_between, v_offset } => {
+                    self.settings.data.space_between = distance_between;
+                    self.settings.data.v_offset = v_offset;
+                    save_config(&self.settings);
+                    self.settings.file_last_modified = SystemTime::now();
+                }
+
+                _ => {}
+            }
+        }
+    }
 }
 
 impl EventHandler for MainWindowState {
@@ -72,6 +101,7 @@ impl EventHandler for MainWindowState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
+        self.process_bus();
         self.reload_settings(ctx);
 
         let transformations = TransformSet::from(&self.settings.data);
@@ -100,7 +130,7 @@ impl EventHandler for MainWindowState {
 }
 
 fn build_context(fullscreen_type: FullscreenType) -> GameResult<(Context, EventLoop<()>)> {
-    let ctx = ggez::ContextBuilder::new("vr_renderer", "chris b")
+    let ctx = ggez::ContextBuilder::new("vr_renderer", "bloeckchen")
         .window_mode(
             WindowMode::default()
                 .dimensions(800.0, 480.0)
@@ -117,8 +147,18 @@ fn build_context(fullscreen_type: FullscreenType) -> GameResult<(Context, EventL
     Ok(ctx)
 }
 
-pub fn vr_render_main() {
-    let result = build_context(FullscreenType::Windowed);
+#[cfg(not(feature = "fullscreen"))]
+fn build_context_according_to_config() -> GameResult<(Context, EventLoop<()>)> {
+    return build_context(FullscreenType::Windowed);
+}
+
+#[cfg(feature = "fullscreen")]
+fn build_context_according_to_config() -> GameResult<(Context, EventLoop<()>)> {
+    return build_context(FullscreenType::True);
+}
+
+pub fn vr_render_main(pub_sub: PubSub<VrMessage>) {
+    let result = build_context_according_to_config();
 
     let (mut ctx, event_loop) = match result {
         Ok((ctx, event_loop)) => (ctx, event_loop),
@@ -128,7 +168,7 @@ pub fn vr_render_main() {
         }
     };
 
-    let state = MainWindowState::new(&mut ctx);
+    let state = MainWindowState::new(&mut ctx, pub_sub);
 
     ggez::event::run(ctx, event_loop, state);
 }

@@ -14,12 +14,12 @@ void setup() {
 
 void loop() {
     read_accelerometer(&values);
-    // print as long hex string
     printf("0x");
-    for (int j = 0; j < sizeof(values); j++) {
-        printf("%02x", reinterpret_cast<uint8_t *>(&values)[j]);
-    }
-    printf("\n");
+
+    printf("%f:%f:%f:%f:%f:%f:%f\n",
+           values.delta_yaw, values.delta_pitch, values.delta_roll,
+           values.yaw, values.pitch, values.roll,
+           values.temperature);
     vTaskDelay(100 / portTICK_PERIOD_MS);
 
     if (Serial.available()) {

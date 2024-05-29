@@ -4,7 +4,31 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-vr_renderer = { path = "../vr_renderer" }
-input_devices = { path = "../input_devices" }
 log.workspace = true
+pub-sub.workspace = true
+
 pretty_env_logger = "0.5.0"
+
+[features]
+headset_attached = [
+    "input_devices/accelerometer",
+    "vr_renderer/fullscreen"
+]
+
+[dependencies.input_devices]
+path = "../input_devices"
+features = [
+    #"accelerometer"
+]
+
+[dependencies.vr_renderer]
+path = "../vr_renderer"
+features = [
+    #"fullscreen"
+]
+
+[dependencies.websocket_server]
+path = "../websocket_server"
+
+[dependencies.messages]
+path = "../messages"

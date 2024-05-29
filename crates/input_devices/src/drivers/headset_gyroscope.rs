@@ -32,27 +32,32 @@ impl TryFrom<String> for GyroscopeDataframe {
 
         let value = &value[2..];
 
-        // value is a hex string. parse it to a byte array
-        let mut bytes = Vec::new();
-        for i in 0..value.len() / 2 {
-            let byte = u8::from_str_radix(&value[i * 2..i * 2 + 2], 16).map_err(|_| InvalidDataframe)?;
-            bytes.push(byte);
-        }
+        // Split the string into parts (:) and convert them to floats
+        let parts: Vec<&str> = value.split(':')
+            .map(|x| x.trim())
+            .collect();
 
-        if bytes.len() != 28 {
+        if parts.len() != 7 {
             return Err(InvalidDataframe);
         }
 
-        // shoot the bytes into the struct
-        let yaw = f32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
-        let pitch = f32::from_le_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]);
-        let roll = f32::from_le_bytes([bytes[8], bytes[9], bytes[10], bytes[11]]);
-
-        let delta_yaw = f32::from_le_bytes([bytes[12], bytes[13], bytes[14], bytes[15]]);
-        let delta_pitch = f32::from_le_bytes([bytes[16], bytes[17], bytes[18], bytes[19]]);
-        let delta_roll = f32::from_le_bytes([bytes[20], bytes[21], bytes[22], bytes[23]]);
-
-        let temperature = f32::from_le_bytes([bytes[24], bytes[25], bytes[26], bytes[27]]);
+        let (
+            yaw,
+            pitch,
+            roll,
+            delta_yaw,
+            delta_pitch,
+            delta_roll,
+            temperature,
+        ) = (
+            parts[0].parse::<f32>().unwrap(),
+            parts[1].parse::<f32>().unwrap(),
+            parts[2].parse::<f32>().unwrap(),
+            parts[3].parse::<f32>().unwrap(),
+            parts[4].parse::<f32>().unwrap(),
+            parts[5].parse::<f32>().unwrap(),
+            parts[6].parse::<f32>().unwrap(),
+        );
 
         Ok(GyroscopeDataframe {
             yaw,

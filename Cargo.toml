@@ -1,9 +1,11 @@
 [workspace]
-members = ["crates/ft_vr", "crates/input_devices", "crates/vr_renderer"]
+members = ["crates/ft_vr", "crates/input_devices", "crates/messages", "crates/vr_renderer", "crates/websocket_server"]
 resolver = "2"
 
 [workspace.dependencies]
 log = "0.4.21"
+pub-sub = "2.0.0"
+serde = { version = "1.0.203", features = ["derive"] }
 ggez = { git = "https://github.com/Bloeckchengrafik/ggez.git", branch = "master" }
 
 [profile.dev]

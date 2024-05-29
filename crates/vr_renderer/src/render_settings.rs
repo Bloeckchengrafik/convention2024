@@ -58,6 +58,11 @@ pub fn read_config() -> SettingsFrame {
     }
 }
 
+pub fn save_config(settings: &SettingsFrame) {
+    let string = ron::ser::to_string_pretty(&settings.data, PrettyConfig::default()).unwrap();
+    std::fs::write("config.ron", string).unwrap();
+}
+
 pub fn config_has_changed(settings: &SettingsFrame) -> bool {
     let modified = std::fs::metadata("config.ron").unwrap().modified().unwrap();
     modified != settings.file_last_modified

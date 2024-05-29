@@ -1,17 +1,14 @@
 [package]
-name = "vr_renderer"
+name = "websocket_server"
 version = "0.1.0"
 edition = "2021"
 
-[features]
-fullscreen = []
-
 [dependencies]
 log.workspace = true
-ggez.workspace = true
 pub-sub.workspace = true
+serde.workspace = true
+
 messages = { path = "../messages" }
-image = "0.25.1"
-serde = "1.0.202"
-ron = "0.8.1"
-screen-info = "0.0.1"
+
+serde_json = "1.0"
+tungstenite = "0.21.0"
