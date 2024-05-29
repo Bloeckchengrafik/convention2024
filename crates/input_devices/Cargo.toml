@@ -1,0 +1,11 @@
+[package]
+name = "input_devices"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+log.workspace = true
+ftswarm_serial = "0.2.2"
+serialport = "4.3.0"

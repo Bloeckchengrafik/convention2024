@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/ft_vr", "crates/vr_renderer"]
+members = ["crates/ft_vr", "crates/input_devices", "crates/vr_renderer"]
 resolver = "2"
 
 [workspace.dependencies]

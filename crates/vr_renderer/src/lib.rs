@@ -9,7 +9,7 @@ extern crate log;
 use ggez::{Context, GameError, GameResult};
 use ggez::conf::{FullscreenType, WindowMode, WindowSetup};
 use ggez::context::HasMut;
-use ggez::event::EventHandler;
+use ggez::event::{EventHandler, EventLoop};
 use ggez::graphics::{self, Image, Color, DrawParam, ImageFormat, Transform};
 use ggez::mint::{Point2, Vector2};
 use image::{EncodableLayout, GenericImageView};
@@ -99,21 +99,34 @@ impl EventHandler for MainWindowState {
     }
 }
 
-pub fn vr_render_main() {
-    let (mut ctx, event_loop) = ggez::ContextBuilder::new("vr_renderer", "chris b")
+fn build_context(fullscreen_type: FullscreenType) -> GameResult<(Context, EventLoop<()>)> {
+    let ctx = ggez::ContextBuilder::new("vr_renderer", "chris b")
         .window_mode(
             WindowMode::default()
                 .dimensions(800.0, 480.0)
                 .borderless(true)
-                .fullscreen_type(FullscreenType::True)
+                .fullscreen_type(fullscreen_type)
                 .resizable(false)
         )
         .window_setup(
             WindowSetup::default()
                 .title("VR Preview")
         )
-        .build()
-        .unwrap();
+        .build()?;
+
+    Ok(ctx)
+}
+
+pub fn vr_render_main() {
+    let result = build_context(FullscreenType::Windowed);
+
+    let (mut ctx, event_loop) = match result {
+        Ok((ctx, event_loop)) => (ctx, event_loop),
+        Err(_) => {
+            error!("Failed to build context");
+            return;
+        }
+    };
 
     let state = MainWindowState::new(&mut ctx);
 
