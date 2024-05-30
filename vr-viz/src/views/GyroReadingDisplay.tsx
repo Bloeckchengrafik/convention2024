@@ -37,14 +37,31 @@ export function GyroReadingDisplay(params: {resetFn: () => void}) {
     const reset = params.resetFn;
     const gyroReading = useContext(GyroReadings);
 
-    const rotation = new Euler(-gyroReading.GyroscopeReading.pitch, -gyroReading.GyroscopeReading.yaw, gyroReading.GyroscopeReading.roll, "YXZ");
+    const rotation = new Euler(-gyroReading.GyroscopeReading.pitch-0.1, -gyroReading.GyroscopeReading.yaw, gyroReading.GyroscopeReading.roll+0.13, "YXZ");
     return (
         <>
             <div>
-                yaw: {format(gyroReading.GyroscopeReading.yaw)} pitch: {format(gyroReading.GyroscopeReading.pitch)} tilt: {format(gyroReading.GyroscopeReading.roll)} <button onClick={reset}>reset</button>
+                <div className="measurement-list">
+                    <div className="measurement-item">
+                        <span>yaw</span>
+                        <span className="value">{format(gyroReading.GyroscopeReading.yaw)}</span>
+                    </div>
+                    <div className="measurement-item">
+                        <span>pitch</span>
+                        <span className="value">{format(gyroReading.GyroscopeReading.pitch)}</span>
+                    </div>
+                    <div className="measurement-item">
+                        <span>tilt</span>
+                        <span className="value">{format(gyroReading.GyroscopeReading.roll)}</span>
+                    </div>
+
+                    <button onClick={reset}>reset</button>
+                </div>
+
+
             </div>
             <Canvas>
-                <ambientLight intensity={Math.PI / 2}/>
+            <ambientLight intensity={Math.PI / 2}/>
                 <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} decay={0} intensity={Math.PI}/>
                 <pointLight position={[-10, -10, -10]} decay={0} intensity={Math.PI}/>
                 <Headset rotation={rotation}/>
