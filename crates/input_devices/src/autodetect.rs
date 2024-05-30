@@ -10,9 +10,12 @@ pub fn autodetect_input_devices() -> InputDevices {
         if (!port_name.contains("ttyUSB") && !port_name.contains("ttyACM")) {
             continue;
         }
-        let mut port = ftswarm_serial::SerialCommunication::connect(port_name);
+        let mut port = serialport::new(port_name, 115200)
+            .timeout(std::time::Duration::from_millis(10))
+            .open()
+            .expect(format!("Failed to open serial port at {}", port_name).as_str());
 
-        if (HeadsetGyroscopeDeviceDriver::check_discovery_signature(&mut port)){
+        if HeadsetGyroscopeDeviceDriver::check_discovery_signature(&mut port) {
             headset_gyroscope = Some(HeadsetGyroscopeDeviceDriver::new(port));
         } else {
             continue;

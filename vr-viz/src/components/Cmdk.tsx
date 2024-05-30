@@ -8,7 +8,7 @@ import CommandPalette, {
     JsonStructureItem,
     useHandleOpenCommandPalette
 } from "react-cmdk";
-import {openGyroTab, openVrDistanceConfigurationTab} from "../dockviewapi.ts";
+import {copyToClipboard, openGyroTab, openVrDistanceConfigurationTab, restoreDefaultLayout} from "../dockviewapi.ts";
 
 function Cmdk(props: { dockview: DockviewApi | undefined }) {
     const api = props.dockview;
@@ -42,6 +42,14 @@ function Cmdk(props: { dockview: DockviewApi | undefined }) {
                     view("Gyro", "Square3Stack3DIcon", openGyroTab.bind(null, api)),
                     view("VR Distance Configuration", "ViewfinderCircleIcon", openVrDistanceConfigurationTab.bind(null, api)),
                 ],
+            },
+            {
+                heading: "Commands",
+                id: "commands",
+                items: [
+                    view("Copy to clipboard", "ClipboardIcon", copyToClipboard.bind(null, api)),
+                    view("Restore default layout", "PaintBrushIcon", restoreDefaultLayout.bind(null, api)),
+                ]
             }
         ],
         search

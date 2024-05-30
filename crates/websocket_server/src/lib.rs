@@ -1,7 +1,7 @@
 use std::net::TcpListener;
 use std::thread::{sleep, spawn};
 use std::time::Duration;
-use log::{info, warn};
+use log::warn;
 use pub_sub::{PubSub};
 use tungstenite::{accept, Message};
 use messages::VrMessage;

@@ -1,6 +1,6 @@
 import './App.css'
 import useWebSocket from "react-use-websocket";
-import React, {useEffect, useState} from "react";
+import {useEffect, useState} from "react";
 import {GyroMessage, VrDistanceConfiguration, WebsocketMessage} from "./types.ts";
 import 'dockview/dist/styles/dockview.css';
 import {DockviewApi, DockviewReact, DockviewReadyEvent} from "dockview";
@@ -8,7 +8,7 @@ import {GyroReadingDisplay} from "./views/GyroReadingDisplay.tsx";
 import Cmdk from "./components/Cmdk.tsx";
 import {GyroReadings, VrDistanceConfigurationReadings} from "./state.ts";
 import VrDistanceConfigurationDisplay from "./views/VrDistanceConfigurationDisplay.tsx";
-import {openGyroTab, openVrDistanceConfigurationTab} from "./dockviewapi.ts";
+import {openGyroTab, openVrDistanceConfigurationTab, restoreDefaultLayout} from "./dockviewapi.ts";
 import {useDebouncedCallback} from "use-debounce";
 
 
@@ -19,9 +19,9 @@ function App() {
 
     const [gyroReading, setGyroReading] = useState<GyroMessage>({
         GyroscopeReading: {
-            x: 0,
-            y: 0,
-            z: 0,
+            yaw: 0,
+            pitch: 0,
+            roll: 0,
             temperature: 0
         }
     });
@@ -60,6 +60,8 @@ function App() {
 
         openGyroTab(api)
         openVrDistanceConfigurationTab(api)
+
+        restoreDefaultLayout(api)
     }
 
     return (
@@ -67,7 +69,9 @@ function App() {
             <GyroReadings.Provider value={gyroReading}>
                 <VrDistanceConfigurationReadings.Provider value={vrDistanceConfigurationReading}>
                     <DockviewReact onReady={onDockviewReady} components={{
-                        "gyro": () => <GyroReadingDisplay/>,
+                        "gyro": () => <GyroReadingDisplay resetFn={() => {
+                            sendJsonMessage({SetGyroscopeZero:{}})
+                        }}/>,
                         "vrdc": () => <VrDistanceConfigurationDisplay setter={(json) => {
                             vrSetter(json);
                             setVrDistanceConfigurationReading(json as VrDistanceConfiguration);

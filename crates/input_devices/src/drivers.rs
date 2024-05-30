@@ -2,13 +2,10 @@ use std::time::Duration;
 
 pub mod headset_gyroscope;
 
-pub enum DriverDiscoveryError {
-    SignatureMismatch,
-}
-
 #[derive(Debug)]
 pub enum DriverProcessError {
     DataframeError(String),
+    IoError,
 }
 
 pub trait DeviceDriver {

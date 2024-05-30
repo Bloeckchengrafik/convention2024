@@ -5,10 +5,10 @@ use messages::VrMessage;
 fn send_accelerometer(input_devices: &InputDevices, bus: &PubSub<VrMessage>) {
     let data = &input_devices.headset_gyroscope.last_data;
     let message = VrMessage::GyroscopeReading {
-        x: data.yaw,
-        y: data.pitch,
-        z: data.roll,
-        temperature: data.temperature,
+        yaw: data.yaw,
+        pitch: data.pitch,
+        roll: data.roll,
+        temperature: 0f32,
     };
 
     if let Err(e) = bus.send(message) {

@@ -1,7 +1,7 @@
 import React, {useContext} from "react";
 import {GyroReadings} from "../state.ts";
 import {Canvas} from "@react-three/fiber";
-import {Vector3} from "three";
+import {Euler, Vector3} from "three";
 import {OrbitControls} from "@react-three/drei";
 import {Model as Headset} from "../3d/Headset.tsx";
 
@@ -33,18 +33,21 @@ function format(num: number) {
     return num.toFixed(2);
 }
 
-export function GyroReadingDisplay() {
+export function GyroReadingDisplay(params: {resetFn: () => void}) {
+    const reset = params.resetFn;
     const gyroReading = useContext(GyroReadings);
+
+    const rotation = new Euler(-gyroReading.GyroscopeReading.pitch, -gyroReading.GyroscopeReading.yaw, gyroReading.GyroscopeReading.roll, "YXZ");
     return (
         <>
             <div>
-                X: {format(gyroReading.GyroscopeReading.x)} Y: {format(gyroReading.GyroscopeReading.y)} Z: {format(gyroReading.GyroscopeReading.z)} T: {format(gyroReading.GyroscopeReading.temperature)}
+                yaw: {format(gyroReading.GyroscopeReading.yaw)} pitch: {format(gyroReading.GyroscopeReading.pitch)} tilt: {format(gyroReading.GyroscopeReading.roll)} <button onClick={reset}>reset</button>
             </div>
             <Canvas>
                 <ambientLight intensity={Math.PI / 2}/>
                 <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} decay={0} intensity={Math.PI}/>
                 <pointLight position={[-10, -10, -10]} decay={0} intensity={Math.PI}/>
-                <Headset rotation={[gyroReading.GyroscopeReading.x, gyroReading.GyroscopeReading.y, gyroReading.GyroscopeReading.z]}/>
+                <Headset rotation={rotation}/>
                 <CoordinateSystem/>
                 <OrbitControls/>
             </Canvas>

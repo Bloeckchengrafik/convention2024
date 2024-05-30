@@ -1,33 +1,45 @@
+use std::io::Read;
+use std::ops::Sub;
 use std::time::Duration;
-use ftswarm_serial::{SerialCommunication, SwarmSerialPort};
-use crate::drivers::{DeviceDriver, DriverDiscoveryError, DriverProcessError};
-use crate::drivers::headset_gyroscope::GyroscopeDataframeError::InvalidDataframe;
+use serialport::SerialPort;
+use crate::drivers::{DeviceDriver, DriverProcessError};
+use crate::drivers::headset_gyroscope::GyroscopeDataframeError::{LenInvalid, NumFormat, StartInvalid};
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct GyroscopeDataframe {
     pub yaw: f32,
     pub pitch: f32,
     pub roll: f32,
-
-    pub delta_yaw: f32,
-    pub delta_pitch: f32,
-    pub delta_roll: f32,
-
-    pub temperature: f32,
 }
 
+impl Sub for GyroscopeDataframe {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        GyroscopeDataframe {
+            yaw: self.yaw - rhs.yaw,
+            pitch: self.pitch - rhs.pitch,
+            roll: self.roll - rhs.roll,
+        }
+    }
+}
+
+#[derive(Debug)]
 pub enum GyroscopeDataframeError {
-    InvalidDataframe,
+    StartInvalid,
+    LenInvalid {
+        expected: usize,
+        got: usize,
+    },
+    NumFormat(std::num::ParseFloatError),
 }
 
-impl TryFrom<String> for GyroscopeDataframe {
-    type Error = GyroscopeDataframeError;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
+impl GyroscopeDataframe {
+    fn try_from(value: String, driver: &mut HeadsetGyroscopeDeviceDriver) -> Result<Self, GyroscopeDataframeError> {
         let value = value.trim_matches(|c| c == '\n' || c == '\r');
         // value has to start with 0x
         if !value.starts_with("0x") {
-            return Err(InvalidDataframe);
+            return Err(StartInvalid);
         }
 
         let value = &value[2..];
@@ -37,88 +49,140 @@ impl TryFrom<String> for GyroscopeDataframe {
             .map(|x| x.trim())
             .collect();
 
-        if parts.len() != 7 {
-            return Err(InvalidDataframe);
+        if parts.len() != 3 {
+            return Err(LenInvalid {
+                expected: 3,
+                got: parts.len(),
+            });
         }
+
+        let (
+            yaw_deg,
+            pitch_deg,
+            roll_deg,
+        ) = (
+            parts[0].parse::<f32>().map_err(|e| NumFormat(e))?,
+            parts[1].parse::<f32>().map_err(|e| NumFormat(e))?,
+            parts[2].parse::<f32>().map_err(|e| NumFormat(e))?,
+        );
 
         let (
             yaw,
             pitch,
             roll,
-            delta_yaw,
-            delta_pitch,
-            delta_roll,
-            temperature,
         ) = (
-            parts[0].parse::<f32>().unwrap(),
-            parts[1].parse::<f32>().unwrap(),
-            parts[2].parse::<f32>().unwrap(),
-            parts[3].parse::<f32>().unwrap(),
-            parts[4].parse::<f32>().unwrap(),
-            parts[5].parse::<f32>().unwrap(),
-            parts[6].parse::<f32>().unwrap(),
+            yaw_deg.to_radians(),
+            pitch_deg.to_radians(),
+            roll_deg.to_radians(),
         );
+
+        driver.last_raw_data = GyroscopeDataframe {
+            yaw,
+            pitch,
+            roll,
+        };
 
         Ok(GyroscopeDataframe {
             yaw,
             pitch,
             roll,
-            delta_yaw,
-            delta_pitch,
-            delta_roll,
-            temperature,
-        })
+        } - driver.zero_offset.unwrap_or(GyroscopeDataframe::default()))
     }
 }
 
 pub struct HeadsetGyroscopeDeviceDriver {
-    port: SerialCommunication,
+    port: Box<dyn SerialPort>,
     pub last_data: GyroscopeDataframe,
+    last_raw_data: GyroscopeDataframe,
     last_timestamp: std::time::Instant,
+    line_buffer: String,
+    zero_offset: Option<GyroscopeDataframe>,
 }
 
 impl HeadsetGyroscopeDeviceDriver {
-    pub fn new(port: SerialCommunication) -> Self {
+    pub fn new(port: Box<dyn SerialPort>) -> Self {
         HeadsetGyroscopeDeviceDriver {
             port,
             last_data: GyroscopeDataframe::default(),
+            last_raw_data: GyroscopeDataframe::default(),
             last_timestamp: std::time::Instant::now(),
+            line_buffer: String::new(),
+            zero_offset: None,
         }
     }
-    pub fn check_discovery_signature(port: &mut SerialCommunication) -> bool {
-        while port.available() {
-            port.read_line();
-        }
+    pub fn check_discovery_signature(port: &mut Box<dyn SerialPort>) -> bool {
+        Self::read_buffer_full(port);
 
-        port.write_line("whoami".to_string());
-        std::thread::sleep(Duration::from_millis(500));
-        let response = port.read_line();
-        if response.starts_with("0x") {
+        std::thread::sleep(std::time::Duration::from_millis(700));
+
+        let mut response = vec![0; 2];
+        port.read_exact(&mut response).unwrap();
+        if response.starts_with(b"0x") {
             return true;
         }
 
-        if !response.starts_with("raw/accelerometer") {
-            return false;
-        }
+        Self::read_buffer_full(port);
 
         return true;
     }
 
+    pub fn zero(&mut self) {
+        self.zero_offset = Some(self.last_raw_data);
+    }
+
+    fn read_buffer_full(port: &mut Box<dyn SerialPort>) {
+        if let Ok(t) = port.bytes_to_read() {
+            if t > 0 {
+                let mut buf = vec![0; t as usize];
+                port.read_exact(&mut buf).unwrap();
+            }
+        }
+    }
+
     fn process_available_line(&mut self, line: String) -> Result<(), GyroscopeDataframeError> {
-        let data = GyroscopeDataframe::try_from(line)?;
+        let data = GyroscopeDataframe::try_from(line, self)?;
 
         self.last_data = data;
         self.last_timestamp = std::time::Instant::now();
 
         Ok(())
     }
+
+    fn read_one_line(&mut self) -> Option<String> {
+        let mut line = self.line_buffer.clone();
+        self.line_buffer.clear();
+        loop {
+            let mut buf = [0; 1];
+            if self.port.bytes_to_read().unwrap() == 0 {
+                self.line_buffer = line;
+                return None;
+            }
+
+            let result = self.port.read_exact(&mut buf);
+            if result.is_err() {
+                self.line_buffer = line;
+                return None;
+            }
+            let c = buf[0] as char;
+            if c == '\n' {
+                break;
+            }
+            line.push(c);
+        }
+
+        Some(line)
+    }
 }
 
 impl DeviceDriver for HeadsetGyroscopeDeviceDriver {
     fn process(&mut self) -> Result<(), DriverProcessError> {
-        while self.port.available() {
-            let line = self.port.read_line();
-            self.process_available_line(line).map_err(|_| DriverProcessError::DataframeError("Invalid Gyroscope Dataframe".into()))?;
+        loop {
+            let line = self.read_one_line();
+            if let Some(line) = line {
+                self.process_available_line(line.clone()).map_err(|e| DriverProcessError::DataframeError(format!("Invalid dataframe: {:?} ({})", e, line)))?;
+            } else {
+                break;
+            }
         }
 
         Ok(())

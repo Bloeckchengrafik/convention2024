@@ -988,16 +988,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ftswarm_serial"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62d47e18d236ae689dfeda7fc020bae3fa3d7255d7dfe1fe15cca83f1e7b9d75"
-dependencies = [
- "log",
- "serialport",
-]
-
-[[package]]
 name = "fxhash"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1422,7 +1412,6 @@ dependencies = [
 name = "input_devices"
 version = "0.1.0"
 dependencies = [
- "ftswarm_serial",
  "log",
  "serialport",
 ]

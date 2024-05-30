@@ -1,8 +1,8 @@
 export type GyroMessage = {
     GyroscopeReading: {
-        x: number;
-        y: number;
-        z: number;
+        yaw: number;
+        pitch: number;
+        roll: number;
         temperature: number;
     }
 }

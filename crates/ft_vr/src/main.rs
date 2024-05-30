@@ -32,16 +32,29 @@ fn init_logging() {
 }
 
 fn input_device_loop(bus: PubSub<VrMessage>) {
-    info!("Starting Input Device Loop");
+    let sub = bus.subscribe();
     let mut input_devices = InputDevices::new();
     loop {
         if let Err(e) = input_devices.process() {
             error!("Error processing input devices: {:?}", e);
-            sleep(Duration::from_millis(100));
+            sleep(Duration::from_millis(40));
             continue;
         }
 
         send_inputs(&input_devices, &bus);
+
+        loop {
+            if let Ok(message) = sub.try_recv() {
+                match message {
+                    VrMessage::SetGyroscopeZero {} => {
+                        input_devices.headset_gyroscope.zero();
+                    }
+                    _ => {}
+                }
+            } else {
+                break;
+            }
+        }
 
         sleep(Duration::from_millis(40));
     }

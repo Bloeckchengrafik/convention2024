@@ -8,5 +8,4 @@ accelerometer = []
 
 [dependencies]
 log.workspace = true
-ftswarm_serial = "0.2.2"
 serialport = "4.3.0"
