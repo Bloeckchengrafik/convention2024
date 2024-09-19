@@ -2,6 +2,8 @@ mod image_post_processing;
 mod image_loader;
 mod render_settings;
 mod transform;
+mod segmentation;
+mod yolov8;
 
 #[macro_use]
 extern crate log;
@@ -17,7 +19,7 @@ use image::{EncodableLayout, GenericImageView};
 use pub_sub::{PubSub, Subscription};
 use screen_info::DisplayInfo;
 use messages::VrMessage;
-use crate::image_loader::{dynamic_to_ggez, left_example, right_example};
+use crate::image_loader::{dynamic_to_ggez, left_image, right_image};
 use crate::image_post_processing::postprocess;
 use crate::render_settings::{config_has_changed, read_config, save_config, SettingsFrame};
 use crate::transform::TransformSet;
@@ -38,8 +40,8 @@ impl MainWindowState {
     pub fn new(ctx: &mut Context, pub_sub: PubSub<VrMessage>) -> Self {
         let config = read_config();
 
-        let left = postprocess(left_example(), &config.data.left_eye);
-        let right = postprocess(right_example(), &config.data.right_eye);
+        let left = postprocess(left_image(), &config.data.left_eye);
+        let right = postprocess(right_image(), &config.data.right_eye);
 
         let lowest_level = ImagePair {
             left: dynamic_to_ggez(ctx, left),
@@ -62,8 +64,8 @@ impl MainWindowState {
         if config_has_changed(&self.settings) {
             self.settings = read_config();
 
-            let left = postprocess(left_example(), &self.settings.data.left_eye);
-            let right = postprocess(right_example(), &self.settings.data.right_eye);
+            let left = postprocess(left_image(), &self.settings.data.left_eye);
+            let right = postprocess(right_image(), &self.settings.data.right_eye);
 
             self.lowest_level = ImagePair {
                 left: dynamic_to_ggez(ctx, left),

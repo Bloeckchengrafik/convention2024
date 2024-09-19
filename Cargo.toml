@@ -7,6 +7,7 @@ log = "0.4.21"
 pub-sub = "2.0.0"
 serde = { version = "1.0.203", features = ["derive"] }
 ggez = { git = "https://github.com/Bloeckchengrafik/ggez.git", branch = "master" }
+#segmentation-models-burn = { git="https://github.com/femshima/segmentation-models-burn.git" }
 
 [profile.dev]
 opt-level = 1

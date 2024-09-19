@@ -43,26 +43,32 @@ export function restoreDefaultLayout(api: DockviewApi) {
                 "type": "branch",
                 "data": [
                     {
-                        "type": "leaf",
-                        "data": {
-                            "views": [
-                                "gyro"
-                            ],
-                            "activeView": "gyro",
-                            "id": "1"
-                        },
-                        "size": 950
-                    },
-                    {
-                        "type": "leaf",
-                        "data": {
-                            "views": [
-                                "vrdc"
-                            ],
-                            "activeView": "vrdc",
-                            "id": "2"
-                        },
-                        "size": 950
+                        "type": "branch",
+                        "data": [
+                            {
+                                "type": "leaf",
+                                "data": {
+                                    "views": [
+                                        "gyro"
+                                    ],
+                                    "activeView": "gyro",
+                                    "id": "1"
+                                },
+                                "size": 774
+                            },
+                            {
+                                "type": "leaf",
+                                "data": {
+                                    "views": [
+                                        "vrdc"
+                                    ],
+                                    "activeView": "vrdc",
+                                    "id": "2"
+                                },
+                                "size": 176
+                            }
+                        ],
+                        "size": 1900
                     }
                 ],
                 "size": 950

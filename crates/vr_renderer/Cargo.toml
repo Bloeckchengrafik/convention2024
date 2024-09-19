@@ -11,7 +11,18 @@ log.workspace = true
 ggez.workspace = true
 pub-sub.workspace = true
 messages = { path = "../messages" }
-image = "0.25.1"
+image = { version = "0.24.7" }
 serde = "1.0.202"
 ron = "0.8.1"
 screen-info = "0.0.1"
+imageproc = { version = "0.23.0", default-features = false }
+ndarray = { version = "0.15.6" }
+ort = { version = "1.16.3", default-features = false, features = ["load-dynamic", "copy-dylibs", "half"] }
+rusttype = { version = "0.9", default-features = false }
+anyhow = { version = "1.0.75" }
+regex = { version = "1.5.4" }
+rand = { version = "0.8.5" }
+chrono = { version = "0.4.30" }
+half = { version = "2.3.1" }
+dirs = { version = "5.0.1" }
+ureq = { version = "2.9.1" }

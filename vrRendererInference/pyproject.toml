@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "vrrendererinference"
+version = "0.1.0"
+description = ""
+authors = ["Christian Bergschneider <christian.bergschneider@gmx.de>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+ultralytics = "^8.2.91"
+torch = "^2.4.1"
+torchvision = "^0.19.1"
+torchaudio = "^2.4.1"
+tflite-runtime = "^2.14.0"
+opencv-python = "^4.10.0.84"
+pygobject = "^3.50.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
