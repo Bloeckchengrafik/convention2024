@@ -1,4 +1,5 @@
 import {AddPanelOptions, DockviewApi, Orientation} from "dockview";
+import {toast} from "sonner";
 
 const gyroSettings = {
     "id": "gyro",
@@ -10,6 +11,12 @@ const vrdcSettings = {
     "id": "vrdc",
     "component": "vrdc",
     "title": "VR Distance Configuration",
+}
+
+const inferenceSettings = {
+    "id": "infr",
+    "component": "infr",
+    "title": "Inference Settings",
 }
 
 function openOrCreatePanel(api: DockviewApi, panelDefinition: AddPanelOptions) {
@@ -31,9 +38,16 @@ export function openVrDistanceConfigurationTab(api: DockviewApi) {
     openOrCreatePanel(api, vrdcSettings);
 }
 
+export function openInferenceSettingsTab(api: DockviewApi) {
+    openOrCreatePanel(api, inferenceSettings);
+}
+
 export function copyToClipboard(api: DockviewApi) {
     const json = api.toJSON();
     navigator.clipboard.writeText(JSON.stringify(json, null, 2)).then(() => console.log("Copied to clipboard"));
+    toast.success("Copied to clipboard", {
+        richColors: true
+    })
 }
 
 export function restoreDefaultLayout(api: DockviewApi) {
@@ -54,27 +68,44 @@ export function restoreDefaultLayout(api: DockviewApi) {
                                     "activeView": "gyro",
                                     "id": "1"
                                 },
-                                "size": 774
+                                "size": 620
                             },
                             {
-                                "type": "leaf",
-                                "data": {
-                                    "views": [
-                                        "vrdc"
-                                    ],
-                                    "activeView": "vrdc",
-                                    "id": "2"
-                                },
-                                "size": 176
+                                "type": "branch",
+                                "data": [
+                                    {
+                                        "type": "leaf",
+                                        "data": {
+                                            "views": [
+                                                "vrdc"
+                                            ],
+                                            "activeView": "vrdc",
+                                            "id": "2"
+                                        },
+                                        "size": 943
+                                    },
+                                    {
+                                        "type": "leaf",
+                                        "data": {
+                                            "views": [
+                                                "infr"
+                                            ],
+                                            "activeView": "infr",
+                                            "id": "3"
+                                        },
+                                        "size": 977
+                                    }
+                                ],
+                                "size": 350
                             }
                         ],
-                        "size": 1900
+                        "size": 1920
                     }
                 ],
-                "size": 950
+                "size": 970
             },
-            "width": 1900,
-            "height": 950,
+            "width": 1920,
+            "height": 970,
             "orientation": Orientation.HORIZONTAL
         },
         "panels": {
@@ -87,8 +118,13 @@ export function restoreDefaultLayout(api: DockviewApi) {
                 "id": "vrdc",
                 "contentComponent": "vrdc",
                 "title": "VR Distance Configuration"
+            },
+            "infr": {
+                "id": "infr",
+                "contentComponent": "infr",
+                "title": "Inference Settings"
             }
         },
-        "activeGroup": "2"
+        "activeGroup": "1"
     })
 }

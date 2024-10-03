@@ -1,5 +1,5 @@
 use ggez::glam::Vec2;
-use crate::render_settings::{EyeSettings, RenderSettingsData};
+use messages::{EyeSettings, RenderSettingsData};
 
 pub struct TransformSet {
     pub position_left: Vec2,

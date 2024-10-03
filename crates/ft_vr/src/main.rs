@@ -5,7 +5,7 @@ use std::time::Duration;
 use log::LevelFilter;
 use pub_sub::PubSub;
 use input_devices::InputDevices;
-use messages::VrMessage;
+use messages::{LogMessageType, VrMessage};
 use vr_renderer::vr_render_main;
 use websocket_server::websocket_server;
 use crate::input::send_inputs;
@@ -36,7 +36,9 @@ fn input_device_loop(bus: PubSub<VrMessage>) {
     let mut input_devices = InputDevices::new();
     loop {
         if let Err(e) = input_devices.process() {
-            error!("Error processing input devices: {:?}", e);
+            let err = format!("Error processing input devices: {:?}", e);
+            error!("{}", &err);
+            let _ = bus.send(VrMessage::Log {message: err, message_type: LogMessageType::Error });
             sleep(Duration::from_millis(40));
             continue;
         }

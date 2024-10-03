@@ -1,5 +1,5 @@
 import {createContext} from "react";
-import {GyroMessage, VrDistanceConfiguration} from "./types.ts";
+import {GyroMessage, ModelConfiguration, VrDistanceConfiguration} from "./types.ts";
 
 export const GyroReadings = createContext<GyroMessage>({
     GyroscopeReading: {
@@ -14,5 +14,16 @@ export const VrDistanceConfigurationReadings = createContext<VrDistanceConfigura
     VrDistanceConfiguration: {
         v_offset: 0,
         distance_between: 0,
+    }
+});
+
+export const InferenceReadings = createContext<ModelConfiguration>({
+    ModelConfiguration: {
+        model: "YoloV8mInt8ONNX",
+        config: {
+            confidence: 0.5,
+            iou: 0.5,
+            kconf: 0.5,
+        }
     }
 });

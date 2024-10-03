@@ -1,3 +1,4 @@
+import time
 from dataclasses import dataclass
 import ultralytics
 import tomllib
@@ -8,13 +9,16 @@ ultralytics.checks()
 # model = ultralytics.YOLO("yolov8m-seg_saved_model/yolov8m-seg_full_integer_quant_edgetpu.tflite")
 model = ultralytics.YOLO("yolov8m-seg.pt", verbose=False)
 
+
 @dataclass
 class CameraSet:
     position: str
     front_src: str
     hand_src: str
 
+
 morph_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
+
 
 class RTSPMixerConfig:
     def __init__(self, file):
@@ -32,6 +36,7 @@ class RTSPMixerConfig:
             data["camera"]["front"]["r"]["src"],
             data["camera"]["hand"]["r"]["src"]
         )
+
 
 class ImageCapture:
     def __init__(self, src):
@@ -52,6 +57,7 @@ def crop_square(img, size, interpolation=cv2.INTER_AREA):
 
     return resized
 
+
 def white_balance(img):
     result = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     avg_a = np.average(result[:, :, 1])
@@ -61,9 +67,11 @@ def white_balance(img):
     result = cv2.cvtColor(result, cv2.COLOR_LAB2BGR)
     return result
 
+
 def hand_img(img):
     img = cv2.bilateralFilter(img, d=9, sigmaColor=75, sigmaSpace=75)
     return white_balance(img)
+
 
 def person_mask(img, last_mask=None):
     result = model.predict(img, verbose=False, conf=0.25)[0]
@@ -76,13 +84,14 @@ def person_mask(img, last_mask=None):
     for ci, mask in enumerate(result.masks.cpu().data.numpy()):
         box = result.boxes.cls.tolist()[ci]
         name = result.names[box]
-        if name != "person":
+        if name != "person" and name != "clock":
             continue
         # mask = result.masks.cpu().data.numpy()[0]
         cumulative_mask = np.bitwise_or(cumulative_mask, (mask * 255).astype(np.uint8))
 
     # mask = result.masks.cpu().data.numpy()[0]
     return crop_square(cumulative_mask, 350)
+
 
 def final_mask(img, last_mask=None):
     mask = person_mask(img, last_mask)
@@ -92,7 +101,8 @@ def final_mask(img, last_mask=None):
 class Streamer:
     def __init__(self, cam_set):
         self.front_str = ImageCapture(cam_set.front_src) if cam_set.front_src.startswith("./") else cv2.VideoCapture(cam_set.front_src)
-        self.hand_str = ImageCapture(cam_set.hand_src) if cam_set.hand_src.startswith("./") else cv2.VideoCapture(cam_set.hand_src)
+        self.hand_str = ImageCapture(cam_set.hand_src) if cam_set.hand_src.startswith("./") else cv2.VideoCapture(
+            cam_set.hand_src)
         self.mask = None
         self.maskimg = None
         self.handimg = None
@@ -128,7 +138,6 @@ class Streamer:
         return final_image
 
 
-
 if __name__ == '__main__':
     config = RTSPMixerConfig("config.toml")
     left = Streamer(config.left)
@@ -138,12 +147,13 @@ if __name__ == '__main__':
         right_frame = right.resolve()
 
         if left_frame is None or right_frame is None:
-            break
+            print(type(left_frame), type(right_frame))
+            continue
 
         dst = 30
         between = np.zeros((350, dst, 3), np.uint8)
 
-        stack = cv2.hconcat([left_frame, between, left_frame])
+        stack = cv2.hconcat([left_frame, between, right_frame])
         mstack = cv2.hconcat([
             cv2.vconcat([
                 crop_square(left.handimg, 150),

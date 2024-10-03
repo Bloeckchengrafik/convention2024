@@ -1,5 +1,5 @@
 use image::DynamicImage;
-use crate::render_settings::EyeSettings;
+use messages::EyeSettings;
 
 pub fn postprocess(image: DynamicImage, eye_settings: &EyeSettings) -> DynamicImage {
     image

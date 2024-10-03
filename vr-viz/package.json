@@ -14,10 +14,12 @@
     "@react-three/fiber": "^8.16.6",
     "@types/three": "^0.164.1",
     "dockview": "^1.14.1",
+    "next-themes": "^0.3.0",
     "react": "^18.2.0",
     "react-cmdk": "^1.3.9",
     "react-dom": "^18.2.0",
     "react-use-websocket": "^4.8.1",
+    "sonner": "^1.5.0",
     "three": "^0.164.1",
     "use-debounce": "^10.0.1"
   },

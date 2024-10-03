@@ -7,7 +7,7 @@ pub fn autodetect_input_devices() -> InputDevices {
     let ports = serialport::available_ports().unwrap();
     for port in ports {
         let port_name = &port.port_name;
-        if (!port_name.contains("ttyUSB") && !port_name.contains("ttyACM")) {
+        if !port_name.contains("ttyUSB") && !port_name.contains("ttyACM") {
             continue;
         }
         let mut port = serialport::new(port_name, 115200)

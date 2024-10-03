@@ -27,11 +27,8 @@ impl Sub for GyroscopeDataframe {
 #[derive(Debug)]
 pub enum GyroscopeDataframeError {
     StartInvalid,
-    LenInvalid {
-        expected: usize,
-        got: usize,
-    },
-    NumFormat(std::num::ParseFloatError),
+    LenInvalid,
+    NumFormat,
 }
 
 impl GyroscopeDataframe {
@@ -50,10 +47,7 @@ impl GyroscopeDataframe {
             .collect();
 
         if parts.len() != 3 {
-            return Err(LenInvalid {
-                expected: 3,
-                got: parts.len(),
-            });
+            return Err(LenInvalid);
         }
 
         let (
@@ -61,9 +55,9 @@ impl GyroscopeDataframe {
             pitch_deg,
             roll_deg,
         ) = (
-            parts[0].parse::<f32>().map_err(|e| NumFormat(e))?,
-            parts[1].parse::<f32>().map_err(|e| NumFormat(e))?,
-            parts[2].parse::<f32>().map_err(|e| NumFormat(e))?,
+            parts[0].parse::<f32>().map_err(|_| NumFormat)?,
+            parts[1].parse::<f32>().map_err(|_| NumFormat)?,
+            parts[2].parse::<f32>().map_err(|_| NumFormat)?,
         );
 
         let (

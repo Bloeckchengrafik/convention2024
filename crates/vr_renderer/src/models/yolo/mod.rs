@@ -3,10 +3,10 @@ mod yolo_result;
 mod ort_backend;
 
 use std::io::{Read, Write};
-use image::DynamicImage;
-pub use crate::yolov8::model::YOLOv8;
-pub use crate::yolov8::ort_backend::{Batch, OrtBackend, OrtConfig, OrtEP, YOLOTask};
-pub use crate::yolov8::yolo_result::{Bbox, Embedding, Point2, YOLOResult};
+use messages::ModelConfiguration;
+pub use crate::models::yolo::model::YOLO;
+pub use crate::models::yolo::ort_backend::{Batch, OrtBackend, OrtConfig, OrtEP, YOLOTask};
+pub use crate::models::yolo::yolo_result::{Bbox, Embedding, Point2, YOLOResult};
 
 pub struct Args {
     pub model: String,
@@ -32,12 +32,12 @@ pub struct Args {
 
 impl Args {
     // cargo run --release --  --trt --fp16 --model ../assets/weights/yolov8m-seg.onnx --source ../assets/images/0172.jpg --plot
-    pub fn new(model_path: String) -> Self {
-        return Args {
+    pub fn new(model_path: String, model_configuration: &ModelConfiguration) -> Self {
+        Args {
             model: model_path,
             device_id: 0,
-            trt: true,
-            cuda: false,
+            trt: false,
+            cuda: true,
             batch: 1,
             batch_min: 1,
             batch_max: 32,
@@ -46,13 +46,13 @@ impl Args {
             nc: None,
             nk: None,
             nm: None,
-            width: Some(800),
-            height: Some(600),
-            conf: 0.3,
-            iou: 0.45,
-            kconf: 0.55,
+            width: Some(640),
+            height: Some(640),
+            conf: model_configuration.confidence,
+            iou: model_configuration.iou,
+            kconf: model_configuration.kconf,
             plot: false,
-            profile: false,
+            profile: true,
         }
     }
 }

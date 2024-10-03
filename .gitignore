@@ -1,3 +1,6 @@
 /target
 venv/
+.venv/
 .idea/
+vrRendererInference/runs
+vrRendererInference/yolov8m-seg_saved_model

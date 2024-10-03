@@ -1,19 +1,22 @@
 [camera.front.l]
-src = "rtsp://localhost:8554/city-traffic"
+#src = "rtsp://localhost:8554/city-traffic"
 #src = "rtsp://172.16.16.163:8554/mjpeg/1"
+src = "./city-road-street.jpg"
 
 [camera.front.r]
-src = "rtsp://localhost:8554/city-traffic"
+#src = "rtsp://localhost:8554/city-traffic"
 #src = "rtsp://localhost:8554/local-hndloop"
+#src = "rtsp://172.16.16.163:8554/mjpeg/1"
+src = "./city-road-street.jpg"
 
 [camera.hand.l]
 #src = "rtsp://localhost:8554/local-loop"
 #src = "rtsp://localhost:8554/city-traffic"
-src = "http://172.16.16.163:81/stream"
+src = "http://172.16.16.173:81/stream"
 #src = "./example-foreground.png"
 
 [camera.hand.r]
 #src = "rtsp://localhost:8554/local-loop"
 #src = "rtsp://localhost:8554/city-traffic"
-#src = "rtsp://172.16.16.163:8554/mjpeg/1"
-src = "./example-foreground.png"
+src = "http://172.16.16.163:81/stream"
+#src = "./example-foreground.png"
