@@ -76,7 +76,7 @@ function InferenceConfigurationDisplay(props: { setter: (_: ModelConfiguration) 
                     }}>
                         <div className="measurement-item">
                             <span>PRE</span>
-                            <span className="value">simd-pre-v6</span>
+                            <span className="value">batch-multi-pre-v7</span>
                         </div>
                         <div className="measurement-item">
                             <span>INF</span>

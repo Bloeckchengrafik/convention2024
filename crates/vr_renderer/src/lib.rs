@@ -34,6 +34,7 @@ struct MainWindowState {
     subscription: Subscription<VrMessage>,
     frame_times: Vec<u128>,
     max_frame_times: usize,
+    tick: u64,
 }
 
 impl MainWindowState {
@@ -48,6 +49,7 @@ impl MainWindowState {
             msgbus: pub_sub,
             frame_times: Vec::new(),
             max_frame_times: 25,
+            tick: 0,
         }
     }
     fn process_bus(&mut self) {
@@ -95,24 +97,27 @@ impl MainWindowState {
 
 impl EventHandler for MainWindowState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
+        self.tick += 1;
+        self.tick %= 3;
         let mut profiler = profiling::Profiler::new(false);
         let now = Instant::now();
         self.process_bus();
         profiler.print_elapsed("bus");
+        if self.tick == 0 {
+            let (left, right) = self.loader.images();
 
-        let (left, right) = self.loader.images();
+            profiler.print_elapsed("imgs");
 
-        profiler.print_elapsed("imgs");
+            let left = postprocess(left, &self.settings.left_eye);
+            let right = postprocess(right, &self.settings.right_eye);
 
-        let left = postprocess(left, &self.settings.left_eye);
-        let right = postprocess(right, &self.settings.right_eye);
+            profiler.print_elapsed("post");
 
-        profiler.print_elapsed("post");
-
-        self.lowest_level = Some(ImagePair {
-            left: dynamic_to_ggez(ctx, left),
-            right: dynamic_to_ggez(ctx, right),
-        });
+            self.lowest_level = Some(ImagePair {
+                left: dynamic_to_ggez(ctx, left),
+                right: dynamic_to_ggez(ctx, right),
+            });
+        }
 
         profiler.print_elapsed("pair");
 

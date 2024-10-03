@@ -38,7 +38,7 @@ impl Args {
             device_id: 0,
             trt: false,
             cuda: true,
-            batch: 1,
+            batch: 2,
             batch_min: 1,
             batch_max: 32,
             fp16: true,
@@ -52,7 +52,7 @@ impl Args {
             iou: model_configuration.iou,
             kconf: model_configuration.kconf,
             plot: false,
-            profile: true,
+            profile: false,
         }
     }
 }
@@ -80,6 +80,36 @@ pub fn non_max_suppression(
     }
     xs.truncate(current_index);
 }
+
+pub fn fastnms(
+    xs: &mut Vec<(Bbox, Option<Vec<f32>>)>,
+    iou_threshold: f32,
+) {
+    xs.sort_by(|b1, b2| {
+        b2.0
+            .confidence()
+            .partial_cmp(&b1.0.confidence())
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+
+    let mut current_index = 0;
+    for index in 0..xs.len() {
+        let mut drop = false;
+        for prev_index in 0..current_index {
+            let iou = xs[prev_index].0.iou(&xs[index].0);
+            if iou > iou_threshold {
+                drop = true;
+                break;
+            }
+        }
+        if !drop {
+            xs.swap(current_index, index);
+            current_index += 1;
+        }
+    }
+    xs.truncate(current_index);
+}
+
 
 pub fn gen_time_string(delimiter: &str) -> String {
     let offset = chrono::FixedOffset::east_opt(8 * 60 * 60).unwrap(); // Beijing

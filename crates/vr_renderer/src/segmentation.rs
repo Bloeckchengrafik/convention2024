@@ -87,6 +87,7 @@ impl SegmentationCache {
             .map(
                 |(base, hand, mask)| {
                     SegmentationCache::overlay_images(&base, &hand, &Self::mask_postprocess(mask))
+                    // return DynamicImage::from(mask)
                 }
             ).collect();
 

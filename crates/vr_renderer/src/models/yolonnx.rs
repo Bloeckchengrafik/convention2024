@@ -79,27 +79,28 @@ impl SegmentationModel for YoloONNXSegmentationModel {
 
         profiler.print_elapsed("filter");
 
-        let ys_result: Vec<Vec<YOLOResult>> = images
-            .iter()
-            .map(|it| self.model.run(&vec![it.clone()]).unwrap().clone())
-            .collect();
+        let ys_result = self.model.run(&images).unwrap();
 
         profiler.print_elapsed("run");
 
         let result = ys_result
             .iter()
             .zip(images.iter())
-            .map(|(results, img)| {
-                let result = results.first().unwrap();
-
+            .map(|(result, img)| {
+                let mut profiler = Profiler::new(false);
                 if result.bboxes.is_none() || result.masks.is_none() {
                     return GrayImage::new(img.width(), img.height());
                 }
 
+                profiler.print_elapsed("bbox_mask_none");
+
                 let bboxes = result.bboxes.clone().unwrap();
                 let masks = result.masks.clone().unwrap();
+                profiler.print_elapsed("clone");
                 let mut final_mask = GrayImage::new(img.width(), img.height());
                 let width = img.width() as usize;
+
+                profiler.print_elapsed("new");
 
                 for (mask, bbox) in masks.iter().zip(bboxes) {
                     if !allowed_ids.contains(&bbox.id()) {
@@ -110,12 +111,13 @@ impl SegmentationModel for YoloONNXSegmentationModel {
                         let x = id % width;
                         let y = id / width;
 
-                        if px > &10u8 {
+                        if *px != 0 {
                             final_mask.put_pixel(x as u32, y as u32, image::Luma([255]));
                         }
                     }
                 }
 
+                profiler.print_elapsed("mask");
                 final_mask
             }).collect();
 
