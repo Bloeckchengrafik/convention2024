@@ -268,7 +268,7 @@ impl YOLO {
             .names()
             .iter()
             .enumerate()
-            .filter(|(_, it)| it.clone() == "person" || it.clone() == "clock")
+            .filter(|(_, it)| *it == "person" || *it == "clock")
             .map(|(i, _)| i)
             .collect::<Vec<usize>>();
 

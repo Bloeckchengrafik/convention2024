@@ -64,7 +64,7 @@ impl SegmentationCache {
         imageproc::filter::gaussian_blur_f32(&mask, 2.0)
     }
 
-    pub fn segment_merge(&mut self, hand: Vec<DynamicImage>, base: Vec<DynamicImage>) -> Vec<DynamicImage> {
+    pub fn segment_merge(&mut self, hand: Vec<&DynamicImage>, base: Vec<&DynamicImage>) -> Vec<DynamicImage> {
         let _span = trace_span!("segment_merge").entered();
         let sized_hand = trace_span!("sized_hand").in_scope(|| hand
             .iter()
@@ -93,6 +93,7 @@ impl SegmentationCache {
                 |(base, hand, mask)| {
                     let _span = trace_span!("overlay").entered();
                     SegmentationCache::overlay_images(&base, &hand, &Self::mask_postprocess(mask))
+                    // hand
                 }
             ).collect();
 

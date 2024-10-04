@@ -1,22 +1,20 @@
-use std::fmt::{Debug, Formatter};
-use std::io::Cursor;
-use ggez::Context;
-use ggez::graphics::{Image, ImageFormat};
-use image::{DynamicImage, EncodableLayout};
-use image::io::Reader as ImageReader;
-use messages::RenderSettingsData;
+use crate::imgstream::{DynamicImageStream, ImageStream, StaticImageStream};
 use crate::segmentation::SegmentationCache;
-
-fn load_image(bytes: &[u8]) -> DynamicImage {
-    ImageReader::new(Cursor::new(bytes)).with_guessed_format().unwrap().decode().unwrap()
-}
+use ggez::graphics::{Image, ImageFormat};
+use ggez::Context;
+use image::{DynamicImage, EncodableLayout};
+use messages::RenderSettingsData;
+use std::fmt::{Debug, Formatter};
+use std::sync::Arc;
 
 pub struct ImageLoader {
     cache: SegmentationCache,
-    lf: DynamicImage,
-    lb: DynamicImage,
-    rf: DynamicImage,
-    rb: DynamicImage,
+    lf: Box<dyn ImageStream>,
+    // lf: Box<Arc<DynamicImageStream>>,
+    lb: Box<dyn ImageStream>,
+    rf: Box<dyn ImageStream>,
+    // rf: Box<Arc<DynamicImageStream>>,
+    rb: Box<dyn ImageStream>,
 }
 
 impl ImageLoader {
@@ -35,19 +33,21 @@ impl ImageLoader {
     pub fn new() -> Self {
         Self {
             cache: SegmentationCache::new(),
-            lf: load_image(include_bytes!("../local-images/segmentable/l/example-foreground.png")),
-            lb: load_image(include_bytes!("../local-images/segmentable/l/example-background.png")),
-            rf: load_image(include_bytes!("../local-images/segmentable/r/example-foreground.png")),
-            rb: load_image(include_bytes!("../local-images/segmentable/r/example-background.png")),
+            lf: StaticImageStream::new(include_bytes!("../local-images/segmentable/l/example-foreground.png")),
+            // lf: DynamicImageStream::new("http://172.16.16.173:81/stream"),
+            lb: StaticImageStream::new(include_bytes!("../local-images/segmentable/l/example-background.png")),
+            rf: StaticImageStream::new(include_bytes!("../local-images/segmentable/r/example-foreground.png")),
+            // rf: DynamicImageStream::new("http://172.16.16.163:81/stream"),
+            rb: StaticImageStream::new(include_bytes!("../local-images/segmentable/r/example-background.png")),
         }
     }
 
     pub fn images(&mut self) -> (DynamicImage, DynamicImage) {
         let mut imgs = self.cache.segment_merge(
-            vec![self.lf.clone(), self.rf.clone()],
-            vec![self.lb.clone(), self.rb.clone()],
+            vec![&self.rf.image(), &self.lf.image()],
+            vec![&self.rb.image(), &self.lb.image()],
         );
-        (imgs.pop().unwrap(), imgs.pop().unwrap())
+        (imgs.pop().unwrap().clone(), imgs.pop().unwrap())
     }
 }
 

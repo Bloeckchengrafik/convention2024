@@ -31,3 +31,6 @@ itertools = "0.13.0"
 rayon = "1.10.0"
 tracing = "0.1.40"
 tracy-client = "0.17.4"
+reqwest = { version = "0.12", features = ["stream"] }
+tokio = { version = "1.0", features = ["full"] }
+futures-util = "0.3.30"

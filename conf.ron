@@ -8,8 +8,8 @@
         image_height: 350,
     ),
     v_offset: 0,
-    space_between: 23,
-    model: YoloV8mFullONNX,
+    space_between: 17,
+    model: YoloV11sFullONNX,
     model_configuration: (
         confidence: 0.32,
         iou: 0.75,

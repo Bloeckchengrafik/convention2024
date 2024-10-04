@@ -11,7 +11,7 @@ const WIDTH: i32 = 800;
 
 fn vertical_center(eye_settings: &EyeSettings) -> f32 {
     let combined_margin = HEIGHT - eye_settings.image_height as i32;
-    return (combined_margin / 2) as f32;
+    (combined_margin / 2) as f32
 }
 
 impl TransformSet {

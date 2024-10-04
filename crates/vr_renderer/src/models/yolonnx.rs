@@ -44,6 +44,7 @@ impl YoloV8ONNXModelType {
 }
 pub struct YoloONNXSegmentationModel {
     model: YOLO,
+    last_masks: Vec<GrayImage>,
 }
 
 impl YoloONNXSegmentationModel {
@@ -52,7 +53,8 @@ impl YoloONNXSegmentationModel {
         yolo.summary();
 
         Self {
-            model: yolo
+            model: yolo,
+            last_masks: vec![],
         }
     }
 }
@@ -87,21 +89,21 @@ impl SegmentationModel for YoloONNXSegmentationModel {
                 let masks = result.masks.clone().unwrap();
                 trace!("Cloned masks");
 
-                let mut final_mask = GrayImage::new(img.width(), img.height());
-                let width = img.width() as usize;
+                // let mut final_mask = GrayImage::new(img.width(), img.height());
+                let mut mask_data = vec![0; (img.width() * img.height()) as usize];
 
                 trace!("Created final mask");
 
                 for mask in masks.iter() {
                     for (id, px) in mask.iter().enumerate() {
-                        let x = id % width;
-                        let y = id / width;
 
-                        if *px != 0 {
-                            final_mask.put_pixel(x as u32, y as u32, image::Luma([255]));
+                        if *px != 0 && id < mask_data.len() {
+                            mask_data[id] = 255;
                         }
                     }
                 }
+
+                let final_mask = GrayImage::from_raw(img.width(), img.height(), mask_data).unwrap();
 
                 trace!("Processed masks");
                 final_mask

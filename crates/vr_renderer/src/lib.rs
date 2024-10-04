@@ -3,6 +3,7 @@ mod image_loader;
 mod transform;
 mod segmentation;
 mod models;
+mod imgstream;
 
 use std::fmt::{Debug, Formatter};
 use std::time::{Instant};
