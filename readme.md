@@ -91,3 +91,6 @@ If you ask nicely I might even let you play around with the settings, but that d
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Although not required, I would love to hear from you if you use this project in any way.
+Just shoot me an email at christian.bergschneider \[slinky-a-thing\] gmx.de or a Message via Discord (bloeckchengrafik)
