@@ -3,7 +3,7 @@ use crate::models::{load_model, SegmentationModel};
 use image::{DynamicImage, GenericImageView, GrayImage, ImageBuffer, Rgba, RgbaImage};
 use messages::file_config::read_config;
 use itertools::izip;
-use tracing::{instrument, trace, trace_span};
+use tracing::{debug_span, instrument, trace, trace_span};
 use messages::RenderSettingsData;
 
 pub struct SegmentationCache {
@@ -59,14 +59,14 @@ impl SegmentationCache {
     }
 
     fn mask_postprocess(mask: GrayImage) -> GrayImage {
-        let _span = trace_span!("mask_postprocess").entered();
+        let _span = debug_span!("mask_postprocess").entered();
         // Blur edges of mask to avoid sharp transitions
         imageproc::filter::gaussian_blur_f32(&mask, 2.0)
     }
 
     pub fn segment_merge(&mut self, hand: Vec<&DynamicImage>, base: Vec<&DynamicImage>) -> Vec<DynamicImage> {
-        let _span = trace_span!("segment_merge").entered();
-        let sized_hand = trace_span!("sized_hand").in_scope(|| hand
+        let _span = debug_span!("segment_merge").entered();
+        let sized_hand = debug_span!("sized_hand").in_scope(|| hand
             .iter()
             .map(
                 |it| it.resize(
@@ -75,7 +75,7 @@ impl SegmentationCache {
                 )
             ));
 
-        let sized_bg = trace_span!("sized_bg").in_scope(|| base
+        let sized_bg = debug_span!("sized_bg").in_scope(|| base
             .iter()
             .map(
                 |it| it.resize(
@@ -84,14 +84,14 @@ impl SegmentationCache {
                 )
             ));
 
-        let hands = trace_span!("collect_hands").in_scope(|| sized_hand.collect());
+        let hands = debug_span!("collect_hands").in_scope(|| sized_hand.collect());
 
-        let masks = trace_span!("predict").in_scope(|| self.model.predict(&hands));
+        let masks = debug_span!("predict").in_scope(|| self.model.predict(&hands));
 
         let images = izip!(sized_bg, hands, masks)
             .map(
                 |(base, hand, mask)| {
-                    let _span = trace_span!("overlay").entered();
+                    let _span = debug_span!("overlay").entered();
                     SegmentationCache::overlay_images(&base, &hand, &Self::mask_postprocess(mask))
                     // hand
                 }

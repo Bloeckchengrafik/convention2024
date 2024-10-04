@@ -2,6 +2,7 @@
     width: 100vw;
     height: 100vh;
     overflow: hidden;
+    font-family: "Noto Sans Mono", monospace;
 }
 
 .padding-around {
@@ -143,4 +144,77 @@ select option {
 .lr-container .right {
     flex: 1;
     min-width: 300px;
+}
+
+.status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #333;
+    padding: 5px;
+    color: #d4d4d4;
+    border-top: 1px solid #1e1e1e;
+    height: 20px;
+}
+
+.status-bar .status {
+    display: flex;
+    gap: 10px;
+}
+
+.status-bar .time {
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.status-bar .time * {
+    height: 15px;
+}
+
+.status-bar .pill {
+    padding: 0 5px;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.down {
+    background-color: rgba(217, 83, 79, 0.5);
+    color: #fff;
+}
+
+.up {
+    background-color: rgba(92, 184, 92, 0.5);
+    color: #fff;
+}
+
+.info {
+    background-color: rgba(91, 192, 222, 0.5);
+    color: #fff;
+}
+
+.watermark {
+    width: 100%;
+    height: 100%;
+    background: #1e1e1e;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.watermark svg {
+    scale: 4;
+    opacity: 0.2;
+    filter: grayscale(0.5);
+}
+
+.watermark span {
+    font-size: 24px;
+    color: #3f3f40;
+}
+
+.dockview-cstm {
+    height: calc(100% - 30px)!important;
 }

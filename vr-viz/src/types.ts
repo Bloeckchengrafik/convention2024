@@ -63,14 +63,44 @@ export type PushRenderSettings = {
     }
 }
 
+export type WheelState = {
+    WheelState: {
+        rotation: number;
+        left_button: boolean;
+        right_button: boolean;
+    }
+}
+
+export type DriverStateUpdate = {
+    DriverStateUpdate: {
+        gyro_online: boolean;
+        swarm_online: boolean;
+        server_time: number;
+    }
+}
+
+export type FPSUpdate = {
+    FPSUpdate: {
+        fps: number;
+    }
+}
+
 export type WebsocketMessage = GyroMessage
     | VrDistanceConfiguration
     | LogMessage
     | ModelConfiguration
-    | PushRenderSettings;
+    | PushRenderSettings
+    | WheelState
+    | DriverStateUpdate
+    | FPSUpdate
+;
 
 export type FullWebsocketMessage = GyroMessage
     & VrDistanceConfiguration
     & LogMessage
     & ModelConfiguration
-    & PushRenderSettings;
+    & PushRenderSettings
+    & WheelState
+    & DriverStateUpdate
+    & FPSUpdate
+;

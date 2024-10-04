@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 pub mod headset_gyroscope;
+pub mod swarm;
 
 #[derive(Debug)]
 pub enum DriverProcessError {

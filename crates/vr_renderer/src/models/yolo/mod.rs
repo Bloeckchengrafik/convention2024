@@ -3,6 +3,7 @@ mod yolo_result;
 mod ort_backend;
 
 use std::io::{Read, Write};
+use ndarray::{Array, Ix1};
 use messages::ModelConfiguration;
 pub use crate::models::yolo::model::YOLO;
 pub use crate::models::yolo::ort_backend::{Batch, OrtBackend, OrtConfig, OrtEP, YOLOTask};
@@ -82,7 +83,7 @@ pub fn non_max_suppression(
 }
 
 pub fn fastnms(
-    xs: &mut Vec<(Bbox, Option<Vec<f32>>)>,
+    xs: &mut Vec<(Bbox, Option<Array<f32, Ix1>>)>,
     iou_threshold: f32,
 ) {
     xs.sort_by(|b1, b2| {

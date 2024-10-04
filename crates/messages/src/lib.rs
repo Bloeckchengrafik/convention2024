@@ -15,7 +15,7 @@ pub struct RenderSettingsData {
     pub v_offset: i32,
     pub space_between: i32,
     pub model: ModelType,
-    pub model_configuration: ModelConfiguration
+    pub model_configuration: ModelConfiguration,
 }
 
 impl Default for RenderSettingsData {
@@ -36,7 +36,7 @@ impl Default for RenderSettingsData {
                 confidence: 0.25,
                 iou: 0.7,
                 kconf: 0.55,
-            }
+            },
         }
     }
 }
@@ -66,7 +66,7 @@ pub enum LogMessageType {
     Info,
     Error,
     Warning,
-    Debug
+    Debug,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -88,9 +88,22 @@ pub enum VrMessage {
     },
     Log {
         message: String,
-        message_type: LogMessageType
+        message_type: LogMessageType,
     },
     PushRenderSettings {
-        data: RenderSettingsData
+        data: RenderSettingsData,
     },
+    WheelState {
+        rotation: i128,
+        left_button: bool,
+        right_button: bool,
+    },
+    DriverStateUpdate {
+        gyro_online: bool,
+        swarm_online: bool,
+        server_time: u64,
+    },
+    FPSUpdate {
+        fps: f32,
+    }
 }

@@ -2,10 +2,10 @@
 
 use anyhow::Result;
 use image::{DynamicImage, GenericImageView, ImageBuffer, Luma};
-use ndarray::{s, Array, Axis, IxDyn};
+use ndarray::{s, Array, Axis, Ix1, IxDyn};
 use rand::{thread_rng, Rng};
 use std::path::PathBuf;
-use tracing::{span, trace, Level};
+use tracing::{debug, span, trace, Level};
 use crate::models::yolo::{check_font, gen_time_string, non_max_suppression, Batch, Bbox, Embedding, OrtBackend, OrtConfig, OrtEP, Point2, YOLOResult, YOLOTask, SKELETON, Args, fastnms};
 
 pub struct YOLO {
@@ -219,7 +219,7 @@ impl YOLO {
             self.width() as usize,
         )).into_dyn();
 
-        trace!("Preprocess");
+        debug!("Preprocess");
 
         for (i, x) in xs.iter().enumerate() {
             let (w0, h0) = x.dimensions();
@@ -234,7 +234,7 @@ impl YOLO {
             ys.slice_mut(s![i, .., 0..height, 0..width]).assign(&array);
         }
 
-        trace!("Preprocess done");
+        debug!("Preprocess done");
 
         Ok(ys)
     }
@@ -243,15 +243,15 @@ impl YOLO {
         let _span = span!(Level::TRACE, "YOLO::run").entered();
         // pre-process
         let xs_ = self.batch_preprocess_mult(xs)?;
-        trace!("Preprocess done");
+        debug!("Preprocess done");
 
         // run
         let ys = self.engine.run(xs_, false)?;
-        trace!("Run done");
+        debug!("Run done");
 
         // post-process
         let ys = self.fast_postprocess(ys)?;
-        trace!("Postprocess done");
+        debug!("Postprocess done");
         Ok(ys)
     }
 
@@ -284,14 +284,14 @@ impl YOLO {
                 .min(self.height() as f32 / height_original);
 
             // Collect detections
-            let mut detections: Vec<(Bbox, Option<Vec<f32>>)> = Vec::new();
+            let mut detections: Vec<(Bbox, Option<Array<f32, Ix1>>)> = Vec::new();
             for (pid, pred) in anchor.axis_iter(Axis(1)).enumerate() {
                 let _span = span!(Level::TRACE, "prediction", pid).entered();
 
                 // Extract bbox and class scores
                 let bbox = pred.slice(s![0..CXYWH_OFFSET]);
                 let clss = pred.slice(s![CXYWH_OFFSET..CXYWH_OFFSET + self.nc() as usize]);
-                let coefs = Some(pred.slice(s![-(self.nm() as isize)..]).to_vec());
+                let coefs = Some(pred.slice(s![-(self.nm() as isize)..]).to_owned());
 
 
                 // Get the class with the highest confidence
@@ -306,7 +306,7 @@ impl YOLO {
                     continue;
                 }
 
-                trace!("id: {}, confidence: {}", id, confidence);
+                debug!("id: {}, confidence: {}", id, confidence);
 
                 // Rescale bbox
                 let cx = bbox[0] / ratio;
@@ -323,12 +323,12 @@ impl YOLO {
                 detections.push((y_bbox, coefs));
             }
 
-            trace!("detections: {}", detections.len());
+            debug!("detections: {}", detections.len());
 
             // Apply non-max suppression
             fastnms(&mut detections, self.iou);
 
-            trace!("nms: {}", detections.len());
+            debug!("nms: {}", detections.len());
 
             // Process masks and collect results
             let mut y_bboxes = Vec::with_capacity(detections.len());
@@ -342,7 +342,6 @@ impl YOLO {
                     if let Some(proto) = protos {
                         let proto = proto.slice(s![idx, .., .., ..]);
                         let (nm, nh, nw) = proto.dim();
-                        let coefs = Array::from_shape_vec((nm,), coefs).unwrap();
 
                         // Compute mask: (nh, nw)
                         let mask = coefs.dot(&proto.into_shape((nm, nh * nw)).unwrap())
@@ -374,7 +373,7 @@ impl YOLO {
                 }
             }
 
-            trace!("results: {}", y_bboxes.len());
+            debug!("results: {}", y_bboxes.len());
 
             // Compile the result
             ys.push(YOLOResult {
@@ -384,7 +383,7 @@ impl YOLO {
                 masks: if !y_masks.is_empty() { Some(y_masks) } else { None },
             });
 
-            trace!("done");
+            debug!("done");
         }
 
         Ok(ys)

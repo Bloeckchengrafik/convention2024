@@ -8,4 +8,6 @@ accelerometer = []
 
 [dependencies]
 log.workspace = true
+messages = { path = "../messages" }
+pub-sub.workspace = true
 serialport = "4.3.0"

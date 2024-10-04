@@ -104,33 +104,9 @@ impl HeadsetGyroscopeDeviceDriver {
             zero_offset: None,
         }
     }
-    pub fn check_discovery_signature(port: &mut Box<dyn SerialPort>) -> bool {
-        Self::read_buffer_full(port);
-
-        std::thread::sleep(std::time::Duration::from_millis(700));
-
-        let mut response = vec![0; 2];
-        port.read_exact(&mut response).unwrap();
-        if response.starts_with(b"0x") {
-            return true;
-        }
-
-        Self::read_buffer_full(port);
-
-        return true;
-    }
 
     pub fn zero(&mut self) {
         self.zero_offset = Some(self.last_raw_data);
-    }
-
-    fn read_buffer_full(port: &mut Box<dyn SerialPort>) {
-        if let Ok(t) = port.bytes_to_read() {
-            if t > 0 {
-                let mut buf = vec![0; t as usize];
-                port.read_exact(&mut buf).unwrap();
-            }
-        }
     }
 
     fn process_available_line(&mut self, line: String) -> Result<(), GyroscopeDataframeError> {

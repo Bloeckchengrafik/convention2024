@@ -2,6 +2,7 @@ import './App.css'
 import useWebSocket from "react-use-websocket";
 import {useEffect, useState} from "react";
 import {
+    DriverStateUpdate,
     FullWebsocketMessage,
     GyroMessage,
     LogMessage, ModelConfiguration,
@@ -19,6 +20,8 @@ import {openGyroTab, openVrDistanceConfigurationTab, restoreDefaultLayout} from 
 import {useDebouncedCallback} from "use-debounce";
 import {toast, Toaster} from "sonner";
 import InferenceConfigurationDisplay from "./views/InferenceConfigurationDisplay.tsx";
+import {StatusBar} from "./components/StatusBar.tsx";
+import {Watermark} from "./components/Watermark.tsx";
 
 
 function App() {
@@ -57,6 +60,12 @@ function App() {
             }
         }
     });
+
+    const [drvStateReading, setDrvStateReading] = useState<DriverStateUpdate>({
+        DriverStateUpdate: {gyro_online: false, server_time: 0, swarm_online: false}
+    });
+
+    const [fpsReading, setFpsReading] = useState<{FPSUpdate: {fps: number}}>({FPSUpdate: {fps: 0}});
 
     const vrSetter = useDebouncedCallback(sendJsonMessage, 100);
     const infrSetter = useDebouncedCallback(sendJsonMessage, 100);
@@ -113,6 +122,10 @@ function App() {
                     richColors: true,
                     duration: 2000
                 })
+            } else if (key == "DriverStateUpdate") {
+                setDrvStateReading(websocketMessage as DriverStateUpdate);
+            } else if (key == "FPSUpdate") {
+                setFpsReading(websocketMessage as {FPSUpdate: {fps: number}});
             }
         }
     }, [lastMessage]);
@@ -148,22 +161,33 @@ function App() {
             <GyroReadings.Provider value={gyroReading}>
                 <VrDistanceConfigurationReadings.Provider value={vrDistanceConfigurationReading}>
                     <InferenceReadings.Provider value={inferenceConfigReading}>
-                        <DockviewReact onReady={onDockviewReady} components={{
-                            "gyro": () => <GyroReadingDisplay resetFn={() => {
-                                sendJsonMessage({SetGyroscopeZero: {}})
-                            }}/>,
-                            "vrdc": () => <VrDistanceConfigurationDisplay setter={(json) => {
-                                vrSetter(json);
-                                setVrDistanceConfigurationReading(json);
-                            }}/>,
-                            "infr": () => <InferenceConfigurationDisplay setter={(json) => {
-                                infrSetter(json);
-                                setInferenceConfigReading(json);
-                            }}/>
-                        }}/>
+                        <DockviewReact
+                            onReady={onDockviewReady}
+                            components={{
+                                "gyro": () => <GyroReadingDisplay resetFn={() => {
+                                    sendJsonMessage({SetGyroscopeZero: {}})
+                                }}/>,
+                                "vrdc": () => <VrDistanceConfigurationDisplay setter={(json) => {
+                                    vrSetter(json);
+                                    setVrDistanceConfigurationReading(json);
+                                }}/>,
+                                "infr": () => <InferenceConfigurationDisplay setter={(json) => {
+                                    infrSetter(json);
+                                    setInferenceConfigReading(json);
+                                }}/>
+                            }}
+                            watermarkComponent={() => <Watermark/>}
+                            className="dockview-cstm"
+                        />
                     </InferenceReadings.Provider>
                 </VrDistanceConfigurationReadings.Provider>
             </GyroReadings.Provider>
+
+            <StatusBar
+                ftSwarm={drvStateReading.DriverStateUpdate.swarm_online}
+                gyro={drvStateReading.DriverStateUpdate.gyro_online}
+                fps={fpsReading.FPSUpdate.fps}
+            />
 
             <Cmdk dockview={dockview}/>
         </>

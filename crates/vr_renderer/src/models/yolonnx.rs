@@ -1,5 +1,5 @@
 use image::{DynamicImage, GrayImage};
-use tracing::trace;
+use tracing::{debug, trace};
 use messages::ModelConfiguration;
 use crate::models::SegmentationModel;
 use crate::models::yolo::{Args, YOLOResult, YOLO};
@@ -61,7 +61,7 @@ impl YoloONNXSegmentationModel {
 
 impl SegmentationModel for YoloONNXSegmentationModel {
     fn predict(&mut self, images: &Vec<DynamicImage>) -> Vec<GrayImage> {
-        let _span = tracing::trace_span!("YoloONNXSegmentationModel::predict");
+        let _span = tracing::debug_span!("YoloONNXSegmentationModel::predict");
         let images = images.iter()
             .map(|it|
                 it.resize(
@@ -69,30 +69,30 @@ impl SegmentationModel for YoloONNXSegmentationModel {
                     image::imageops::FilterType::Nearest,
                 )
             ).collect::<Vec<DynamicImage>>();
-        trace!("Resized images");
+        debug!("Resized images");
 
         let ys_result = self.model.run(&images).unwrap();
 
-        trace!("Got result");
+        debug!("Got result");
 
         let result = ys_result
             .iter()
             .zip(images.iter())
             .map(|(result, img)| {
-                let _span = tracing::trace_span!("YoloONNXSegmentationModel::postprocess");
+                let _span = tracing::debug_span!("YoloONNXSegmentationModel::postprocess");
                 if result.bboxes.is_none() || result.masks.is_none() {
                     return GrayImage::new(img.width(), img.height());
                 }
 
-                trace!("Got bboxes and masks");
+                debug!("Got bboxes and masks");
 
                 let masks = result.masks.clone().unwrap();
-                trace!("Cloned masks");
+                debug!("Cloned masks");
 
                 // let mut final_mask = GrayImage::new(img.width(), img.height());
                 let mut mask_data = vec![0; (img.width() * img.height()) as usize];
 
-                trace!("Created final mask");
+                debug!("Created final mask");
 
                 for mask in masks.iter() {
                     for (id, px) in mask.iter().enumerate() {
@@ -105,11 +105,11 @@ impl SegmentationModel for YoloONNXSegmentationModel {
 
                 let final_mask = GrayImage::from_raw(img.width(), img.height(), mask_data).unwrap();
 
-                trace!("Processed masks");
+                debug!("Processed masks");
                 final_mask
             }).collect();
 
-        trace!("Returning result");
+        debug!("Returning result");
 
         result
     }

@@ -14,7 +14,7 @@ use ggez::graphics::{self, Color, DrawParam, Image, Text, TextFragment, Transfor
 use ggez::mint::{Point2, Vector2};
 use log::error;
 use pub_sub::{PubSub, Subscription};
-use tracing::{instrument, span, trace, trace_span, Level};
+use tracing::{debug_span, instrument, span, trace, trace_span, Level};
 use messages::{LogMessageType, RenderSettingsData, VrMessage};
 use crate::image_loader::{dynamic_to_ggez, ImageLoader};
 use crate::image_post_processing::postprocess;
@@ -34,6 +34,9 @@ struct MainWindowState {
     msgbus: PubSub<VrMessage>,
     subscription: Subscription<VrMessage>,
     tick: u64,
+    fps_buffer: [u128; 20],
+    last_frame: Instant,
+    fps_buf_idx: usize,
 }
 
 
@@ -56,6 +59,9 @@ impl MainWindowState {
             subscription: pub_sub.subscribe(),
             msgbus: pub_sub,
             tick: 0,
+            fps_buffer: [0; 20],
+            last_frame: Instant::now(),
+            fps_buf_idx: 0,
         }
     }
 
@@ -92,6 +98,24 @@ impl MainWindowState {
             }
         }
     }
+
+    fn finish_frame(&mut self) {
+        let now = Instant::now();
+        let duration = now - self.last_frame;
+        self.last_frame = now;
+
+        self.fps_buffer[self.fps_buf_idx] = duration.as_millis();
+        self.fps_buf_idx += 1;
+        if self.fps_buf_idx >= 20 {
+            self.fps_buf_idx = 0;
+            let sum: u128 = self.fps_buffer.iter().sum();
+            let avg = sum / 20;
+            let fps = 1000.0 / avg as f32;
+            let _ = self.msgbus.send(VrMessage::FPSUpdate { fps });
+        }
+
+        tracy_client::frame_mark();
+    }
 }
 
 impl EventHandler for MainWindowState {
@@ -101,16 +125,16 @@ impl EventHandler for MainWindowState {
         self.tick %= 3;
         self.process_bus();
         if self.tick == 0 {
-            let (left, right) = trace_span!("loader.images()")
+            let (left, right) = debug_span!("loader.images()")
                 .in_scope(|| self.loader.images());
 
-            let (left, right) = trace_span!("postprocess")
+            let (left, right) = debug_span!("postprocess")
                 .in_scope(|| (
                     postprocess(left, &self.settings.left_eye),
                     postprocess(right, &self.settings.right_eye)
                 ));
 
-            trace_span!("update.lowest_level")
+            debug_span!("update.lowest_level")
                 .in_scope(|| {
                     self.lowest_level = Some(ImagePair {
                         left: dynamic_to_ggez(ctx, left),
@@ -147,7 +171,7 @@ impl EventHandler for MainWindowState {
             });
         }
 
-        tracy_client::frame_mark();
+        self.finish_frame();
         canvas.finish(ctx)
     }
 }

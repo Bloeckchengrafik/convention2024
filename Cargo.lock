@@ -1607,6 +1607,8 @@ name = "input_devices"
 version = "0.1.0"
 dependencies = [
  "log",
+ "messages",
+ "pub-sub",
  "serialport",
 ]
 
