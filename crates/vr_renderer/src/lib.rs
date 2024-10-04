@@ -3,18 +3,17 @@ mod image_loader;
 mod transform;
 mod segmentation;
 mod models;
-pub mod profiling;
 
-#[macro_use]
-extern crate log;
-
+use std::fmt::{Debug, Formatter};
 use std::time::{Instant};
 use ggez::{Context, GameResult};
 use ggez::conf::{FullscreenType, WindowMode, WindowSetup};
 use ggez::event::{EventHandler, EventLoop};
 use ggez::graphics::{self, Color, DrawParam, Image, Text, TextFragment, Transform};
 use ggez::mint::{Point2, Vector2};
+use log::error;
 use pub_sub::{PubSub, Subscription};
+use tracing::{instrument, span, trace, trace_span, Level};
 use messages::{LogMessageType, RenderSettingsData, VrMessage};
 use crate::image_loader::{dynamic_to_ggez, ImageLoader};
 use crate::image_post_processing::postprocess;
@@ -26,15 +25,23 @@ pub struct ImagePair {
     pub right: Image,
 }
 
+
 struct MainWindowState {
     loader: ImageLoader,
     lowest_level: Option<ImagePair>,
     settings: RenderSettingsData,
     msgbus: PubSub<VrMessage>,
     subscription: Subscription<VrMessage>,
-    frame_times: Vec<u128>,
-    max_frame_times: usize,
     tick: u64,
+}
+
+
+impl Debug for MainWindowState {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MainWindowState")
+            .field("tick", &self.tick)
+            .finish()
+    }
 }
 
 impl MainWindowState {
@@ -47,11 +54,11 @@ impl MainWindowState {
             settings: config,
             subscription: pub_sub.subscribe(),
             msgbus: pub_sub,
-            frame_times: Vec::new(),
-            max_frame_times: 25,
             tick: 0,
         }
     }
+
+    #[instrument]
     fn process_bus(&mut self) {
         loop {
             let message = self.subscription.try_recv();
@@ -84,50 +91,32 @@ impl MainWindowState {
             }
         }
     }
-
-    fn calculate_fps(&self) -> f64 {
-        if self.frame_times.is_empty() {
-            return 0.0;
-        }
-        let total_time: u128 = self.frame_times.iter().sum();
-        let avg_time = total_time as f64 / self.frame_times.len() as f64;
-        1000000000.0 / avg_time
-    }
 }
 
 impl EventHandler for MainWindowState {
+    #[instrument]
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         self.tick += 1;
         self.tick %= 3;
-        let mut profiler = profiling::Profiler::new(false);
-        let now = Instant::now();
         self.process_bus();
-        profiler.print_elapsed("bus");
         if self.tick == 0 {
-            let (left, right) = self.loader.images();
+            let (left, right) = trace_span!("loader.images()")
+                .in_scope(|| self.loader.images());
 
-            profiler.print_elapsed("imgs");
+            let (left, right) = trace_span!("postprocess")
+                .in_scope(|| (
+                    postprocess(left, &self.settings.left_eye),
+                    postprocess(right, &self.settings.right_eye)
+                ));
 
-            let left = postprocess(left, &self.settings.left_eye);
-            let right = postprocess(right, &self.settings.right_eye);
-
-            profiler.print_elapsed("post");
-
-            self.lowest_level = Some(ImagePair {
-                left: dynamic_to_ggez(ctx, left),
-                right: dynamic_to_ggez(ctx, right),
-            });
+            trace_span!("update.lowest_level")
+                .in_scope(|| {
+                    self.lowest_level = Some(ImagePair {
+                        left: dynamic_to_ggez(ctx, left),
+                        right: dynamic_to_ggez(ctx, right),
+                    });
+                });
         }
-
-        profiler.print_elapsed("pair");
-
-        let elapsed = now.elapsed().as_nanos();
-        self.frame_times.push(elapsed);
-        if self.frame_times.len() > self.max_frame_times {
-            self.frame_times.remove(0);
-        }
-
-        profiler.print_elapsed("fps");
 
         Ok(())
     }
@@ -157,19 +146,7 @@ impl EventHandler for MainWindowState {
             });
         }
 
-        canvas.draw(&Text::new(TextFragment::new(format!("LPS: {:.2}", self.calculate_fps()))), DrawParam {
-            transform: Transform::Values {
-                dest: Point2 {
-                    x: 10.0,
-                    y: 10.0,
-                },
-                rotation: 0.0,
-                scale: Vector2 { x: 1.0, y: 1.0 },
-                offset: Point2 { x: 0.0, y: 0.0 },
-            },
-            ..Default::default()
-        });
-
+        tracy_client::frame_mark();
         canvas.finish(ctx)
     }
 }

@@ -4,6 +4,7 @@ use std::thread::sleep;
 use std::time::Duration;
 use log::LevelFilter;
 use pub_sub::PubSub;
+use tracing_subscriber::layer::SubscriberExt;
 use input_devices::InputDevices;
 use messages::{LogMessageType, VrMessage};
 use vr_renderer::vr_render_main;
@@ -62,8 +63,15 @@ fn input_device_loop(bus: PubSub<VrMessage>) {
     }
 }
 
+fn init_tracing() {
+    tracing::subscriber::set_global_default(
+        tracing_subscriber::registry().with(tracing_tracy::TracyLayer::default())
+    ).expect("setup tracy layer");
+}
+
 fn main() {
     init_logging();
+    init_tracing();
 
     let bus = PubSub::<VrMessage>::new();
 

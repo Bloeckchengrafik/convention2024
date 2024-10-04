@@ -1,12 +1,19 @@
+use std::fmt::{Debug, Formatter};
 use crate::models::{load_model, SegmentationModel};
 use image::{DynamicImage, GenericImageView, GrayImage, ImageBuffer, Rgba, RgbaImage};
 use messages::file_config::read_config;
 use itertools::izip;
+use tracing::{instrument, trace, trace_span};
 use messages::RenderSettingsData;
-use crate::profiling::Profiler;
 
 pub struct SegmentationCache {
     model: Box<dyn SegmentationModel>,
+}
+
+impl Debug for SegmentationCache {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SegmentationCache").finish()
+    }
 }
 
 impl SegmentationCache {
@@ -52,46 +59,42 @@ impl SegmentationCache {
     }
 
     fn mask_postprocess(mask: GrayImage) -> GrayImage {
+        let _span = trace_span!("mask_postprocess").entered();
         // Blur edges of mask to avoid sharp transitions
         imageproc::filter::gaussian_blur_f32(&mask, 2.0)
     }
 
     pub fn segment_merge(&mut self, hand: Vec<DynamicImage>, base: Vec<DynamicImage>) -> Vec<DynamicImage> {
-        let mut profiler = Profiler::new(false);
-        let sized_hand = hand
+        let _span = trace_span!("segment_merge").entered();
+        let sized_hand = trace_span!("sized_hand").in_scope(|| hand
             .iter()
             .map(
                 |it| it.resize(
                     640, 640,
                     image::imageops::FilterType::Nearest,
                 )
-            );
-        profiler.print_elapsed("sz_hand");
-        let sized_bg = base
+            ));
+
+        let sized_bg = trace_span!("sized_bg").in_scope(|| base
             .iter()
             .map(
                 |it| it.resize(
                     640, 640,
                     image::imageops::FilterType::Nearest,
                 )
-            );
-        profiler.print_elapsed("sz_bg");
-        let hands = sized_hand.collect();
-        profiler.print_elapsed("collect");
+            ));
 
-        let masks = self.model.predict(&hands);
+        let hands = trace_span!("collect_hands").in_scope(|| sized_hand.collect());
 
-        profiler.print_elapsed("predict");
+        let masks = trace_span!("predict").in_scope(|| self.model.predict(&hands));
 
         let images = izip!(sized_bg, hands, masks)
             .map(
                 |(base, hand, mask)| {
+                    let _span = trace_span!("overlay").entered();
                     SegmentationCache::overlay_images(&base, &hand, &Self::mask_postprocess(mask))
-                    // return DynamicImage::from(mask)
                 }
             ).collect();
-
-        profiler.print_elapsed("overlay");
 
         images
     }

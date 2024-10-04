@@ -5,7 +5,7 @@ use image::{DynamicImage, GenericImageView, ImageBuffer, Luma};
 use ndarray::{s, Array, Axis, IxDyn};
 use rand::{thread_rng, Rng};
 use std::path::PathBuf;
-
+use tracing::{span, trace, Level};
 use crate::models::yolo::{check_font, gen_time_string, non_max_suppression, Batch, Bbox, Embedding, OrtBackend, OrtConfig, OrtEP, Point2, YOLOResult, YOLOTask, SKELETON, Args, fastnms};
 
 pub struct YOLO {
@@ -211,12 +211,15 @@ impl YOLO {
     }
 
     pub fn batch_preprocess_mult(&mut self, xs: &Vec<DynamicImage>) -> Result<Array<f32, IxDyn>> {
+        let _span = span!(Level::TRACE, "batch_preprocess_mult").entered();
         let mut ys = Array::ones((
             xs.len(),
             3,
             self.height() as usize,
             self.width() as usize,
         )).into_dyn();
+
+        trace!("Preprocess");
 
         for (i, x) in xs.iter().enumerate() {
             let (w0, h0) = x.dimensions();
@@ -231,50 +234,49 @@ impl YOLO {
             ys.slice_mut(s![i, .., 0..height, 0..width]).assign(&array);
         }
 
+        trace!("Preprocess done");
+
         Ok(ys)
     }
 
     pub fn run(&mut self, xs: &Vec<DynamicImage>) -> Result<Vec<YOLOResult>> {
+        let _span = span!(Level::TRACE, "YOLO::run").entered();
         // pre-process
-        let t_pre = std::time::Instant::now();
         let xs_ = self.batch_preprocess_mult(xs)?;
-        if self.profile {
-            println!("[Model Preprocess]: {:?}", t_pre.elapsed());
-        }
+        trace!("Preprocess done");
 
         // run
-        let t_run = std::time::Instant::now();
         let ys = self.engine.run(xs_, false)?;
-        if self.profile {
-            println!("[Model Inference]: {:?}", t_run.elapsed());
-        }
+        trace!("Run done");
 
         // post-process
-        let t_post = std::time::Instant::now();
-        let ys = self.fast_postprocess(ys, xs)?;
-        if self.profile {
-            println!("[Model Postprocess]: {:?}", t_post.elapsed());
-        }
-
-        // plot and save
-        if self.plot {
-            self.plot_and_save(&ys, xs, Some(&SKELETON));
-        }
+        let ys = self.fast_postprocess(ys)?;
+        trace!("Postprocess done");
         Ok(ys)
     }
 
     pub fn fast_postprocess(
         &self,
         xs: Vec<Array<f32, IxDyn>>,
-        xs0: &[DynamicImage],
     ) -> Result<Vec<YOLOResult>> {
         const CXYWH_OFFSET: usize = 4; // cxcywh
 
         let preds = &xs[0];
         let protos = xs.get(1);
 
+        let allowed_ids = self
+            .names()
+            .iter()
+            .enumerate()
+            .filter(|(_, it)| it.clone() == "person" || it.clone() == "clock")
+            .map(|(i, _)| i)
+            .collect::<Vec<usize>>();
+
         let mut ys = Vec::with_capacity(preds.len_of(Axis(0)));
         for (idx, anchor) in preds.axis_iter(Axis(0)).enumerate() {
+
+            let _span = span!(Level::TRACE, "fast_postprocess", idx).entered();
+
             // Input image dimensions
             let width_original = 640f32;
             let height_original = 640f32;
@@ -283,7 +285,9 @@ impl YOLO {
 
             // Collect detections
             let mut detections: Vec<(Bbox, Option<Vec<f32>>)> = Vec::new();
-            for pred in anchor.axis_iter(Axis(1)) {
+            for (pid, pred) in anchor.axis_iter(Axis(1)).enumerate() {
+                let _span = span!(Level::TRACE, "prediction", pid).entered();
+
                 // Extract bbox and class scores
                 let bbox = pred.slice(s![0..CXYWH_OFFSET]);
                 let clss = pred.slice(s![CXYWH_OFFSET..CXYWH_OFFSET + self.nc() as usize]);
@@ -298,9 +302,11 @@ impl YOLO {
                     .unwrap();
 
                 // Confidence thresholding
-                if confidence < self.conf {
+                if confidence < self.conf || !allowed_ids.contains(&id) {
                     continue;
                 }
+
+                trace!("id: {}, confidence: {}", id, confidence);
 
                 // Rescale bbox
                 let cx = bbox[0] / ratio;
@@ -317,8 +323,12 @@ impl YOLO {
                 detections.push((y_bbox, coefs));
             }
 
+            trace!("detections: {}", detections.len());
+
             // Apply non-max suppression
             fastnms(&mut detections, self.iou);
+
+            trace!("nms: {}", detections.len());
 
             // Process masks and collect results
             let mut y_bboxes = Vec::with_capacity(detections.len());
@@ -364,6 +374,8 @@ impl YOLO {
                 }
             }
 
+            trace!("results: {}", y_bboxes.len());
+
             // Compile the result
             ys.push(YOLOResult {
                 probs: None,
@@ -371,6 +383,8 @@ impl YOLO {
                 keypoints: None,
                 masks: if !y_masks.is_empty() { Some(y_masks) } else { None },
             });
+
+            trace!("done");
         }
 
         Ok(ys)

@@ -84,7 +84,7 @@ function InferenceConfigurationDisplay(props: { setter: (_: ModelConfiguration) 
                         </div>
                         <div className="measurement-item">
                             <span>POST</span>
-                            <span className="value">def-post-v1</span>
+                            <span className="value">fast-post-v2</span>
                         </div>
                     </div>
                 </div>

@@ -1,8 +1,8 @@
 use image::{DynamicImage, GrayImage};
+use tracing::trace;
 use messages::ModelConfiguration;
 use crate::models::SegmentationModel;
 use crate::models::yolo::{Args, YOLOResult, YOLO};
-use crate::profiling::Profiler;
 
 pub enum YoloV8ONNXQuantization {
     Int8,
@@ -59,7 +59,7 @@ impl YoloONNXSegmentationModel {
 
 impl SegmentationModel for YoloONNXSegmentationModel {
     fn predict(&mut self, images: &Vec<DynamicImage>) -> Vec<GrayImage> {
-        let mut profiler = Profiler::new(false);
+        let _span = tracing::trace_span!("YoloONNXSegmentationModel::predict");
         let images = images.iter()
             .map(|it|
                 it.resize(
@@ -67,46 +67,32 @@ impl SegmentationModel for YoloONNXSegmentationModel {
                     image::imageops::FilterType::Nearest,
                 )
             ).collect::<Vec<DynamicImage>>();
-        profiler.print_elapsed("resize");
-
-        let allowed_ids = self.model
-            .names()
-            .iter()
-            .enumerate()
-            .filter(|(_, it)| it.clone() == "person" || it.clone() == "clock")
-            .map(|(i, _)| i)
-            .collect::<Vec<usize>>();
-
-        profiler.print_elapsed("filter");
+        trace!("Resized images");
 
         let ys_result = self.model.run(&images).unwrap();
 
-        profiler.print_elapsed("run");
+        trace!("Got result");
 
         let result = ys_result
             .iter()
             .zip(images.iter())
             .map(|(result, img)| {
-                let mut profiler = Profiler::new(false);
+                let _span = tracing::trace_span!("YoloONNXSegmentationModel::postprocess");
                 if result.bboxes.is_none() || result.masks.is_none() {
                     return GrayImage::new(img.width(), img.height());
                 }
 
-                profiler.print_elapsed("bbox_mask_none");
+                trace!("Got bboxes and masks");
 
-                let bboxes = result.bboxes.clone().unwrap();
                 let masks = result.masks.clone().unwrap();
-                profiler.print_elapsed("clone");
+                trace!("Cloned masks");
+
                 let mut final_mask = GrayImage::new(img.width(), img.height());
                 let width = img.width() as usize;
 
-                profiler.print_elapsed("new");
+                trace!("Created final mask");
 
-                for (mask, bbox) in masks.iter().zip(bboxes) {
-                    if !allowed_ids.contains(&bbox.id()) {
-                        continue
-                    }
-
+                for mask in masks.iter() {
                     for (id, px) in mask.iter().enumerate() {
                         let x = id % width;
                         let y = id / width;
@@ -117,11 +103,11 @@ impl SegmentationModel for YoloONNXSegmentationModel {
                     }
                 }
 
-                profiler.print_elapsed("mask");
+                trace!("Processed masks");
                 final_mask
             }).collect();
 
-        profiler.print_elapsed("postprocess");
+        trace!("Returning result");
 
         result
     }

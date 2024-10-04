@@ -5,6 +5,7 @@ use ort::execution_providers::{CUDAExecutionProviderOptions, TensorRTExecutionPr
 use ort::tensor::TensorElementDataType;
 use ort::{Environment, ExecutionProvider, Session, SessionBuilder, Value};
 use regex::Regex;
+use tracing::trace;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum YOLOTask {
@@ -334,30 +335,22 @@ impl OrtBackend {
     }
 
     pub fn run_fp32(&self, xs: Array<f32, IxDyn>, profile: bool) -> Result<Vec<Array<f32, IxDyn>>> {
+        let _span = tracing::trace_span!("OrtBackend::run_fp32");
         // h2d
-        let t = std::time::Instant::now();
         let xs = CowArray::from(xs);
         let xs = vec![Value::from_array(self.session.allocator(), &xs)?];
-        if profile {
-            println!("[ORT H2D]: {:?}", t.elapsed());
-        }
+        trace!("H2D");
 
         // run
-        let t = std::time::Instant::now();
         let ys = self.session.run(xs)?;
-        if profile {
-            println!("[ORT Inference]: {:?}", t.elapsed());
-        }
+        trace!("Inference");
 
         // d2h
         Ok(ys
             .iter()
             .map(|x| {
-                let t = std::time::Instant::now();
                 let x = x.try_extract::<_>().unwrap().view().clone().into_owned();
-                if profile {
-                    println!("[ORT D2H]: {:?}", t.elapsed());
-                }
+                trace!("D2H");
                 x
             })
             .collect::<Vec<Array<_, _>>>())

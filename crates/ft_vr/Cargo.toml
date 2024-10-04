@@ -8,6 +8,9 @@ log.workspace = true
 pub-sub.workspace = true
 
 pretty_env_logger = "0.5.0"
+tracing = "0.1.40"
+tracing-tracy = "0.11.3"
+tracing-subscriber = "0.3.18"
 
 [features]
 headset_attached = [

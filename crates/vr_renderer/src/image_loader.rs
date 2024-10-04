@@ -1,3 +1,4 @@
+use std::fmt::{Debug, Formatter};
 use std::io::Cursor;
 use ggez::Context;
 use ggez::graphics::{Image, ImageFormat};
@@ -21,6 +22,12 @@ pub struct ImageLoader {
 impl ImageLoader {
     pub(crate) fn reload(&mut self, settings: &RenderSettingsData) {
         self.cache.reload(settings);
+    }
+}
+
+impl Debug for ImageLoader {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ImageLoader").finish()
     }
 }
 
