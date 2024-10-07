@@ -9,7 +9,8 @@ export type GyroMessage = {
 
 export type VrDistanceConfiguration = {
     VrDistanceConfiguration: {
-        distance_between: number;
+        distance_between_b: number;
+        distance_between_f: number;
         v_offset: number;
     }
 }
@@ -52,7 +53,8 @@ export type PushRenderSettings = {
             left_eye: unknown;
             right_eye: unknown;
             v_offset: number;
-            space_between: number;
+            space_between_back: number;
+            space_between_front: number;
             model: Model;
             model_configuration: {
                 confidence: number;
@@ -68,20 +70,52 @@ export type WheelState = {
         rotation: number;
         left_button: boolean;
         right_button: boolean;
+        flipped: boolean;
+    }
+}
+
+
+export type DriverState = {
+    Online: {
+        name: string;
+    }
+} | {
+    Offline: {
+        name: string;
     }
 }
 
 export type DriverStateUpdate = {
     DriverStateUpdate: {
-        gyro_online: boolean;
-        swarm_online: boolean;
-        server_time: number;
+        states: DriverState[];
     }
 }
 
 export type FPSUpdate = {
     FPSUpdate: {
         fps: number;
+    }
+}
+
+export type ResetWheel = {
+    ResetWheel: Record<string, never>
+}
+
+export type FlipWheelBtns = {
+    FlipWheelBtns: {
+        flip: boolean;
+    }
+}
+
+export type PedalState = {
+    PedalState: {
+        pressed: number;
+    }
+}
+
+export type ZeroPedal = {
+    ZeroPedal: {
+        position: "Lower" | "Upper";
     }
 }
 
@@ -93,6 +127,10 @@ export type WebsocketMessage = GyroMessage
     | WheelState
     | DriverStateUpdate
     | FPSUpdate
+    | ResetWheel
+    | FlipWheelBtns
+    | PedalState
+    | ZeroPedal
 ;
 
 export type FullWebsocketMessage = GyroMessage
@@ -103,4 +141,8 @@ export type FullWebsocketMessage = GyroMessage
     & WheelState
     & DriverStateUpdate
     & FPSUpdate
+    & ResetWheel
+    & FlipWheelBtns
+    & PedalState
+    & ZeroPedal
 ;

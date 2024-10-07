@@ -19,6 +19,15 @@ const inferenceSettings = {
     "title": "Inference Settings",
 }
 
+
+
+const WheelSettings = {
+    "id": "whl",
+    "component": "whl",
+    "title": "Wheel Reading",
+}
+
+
 function openOrCreatePanel(api: DockviewApi, panelDefinition: AddPanelOptions) {
     const panelId = panelDefinition.id;
     const panel = api.getPanel(panelId);
@@ -42,6 +51,10 @@ export function openInferenceSettingsTab(api: DockviewApi) {
     openOrCreatePanel(api, inferenceSettings);
 }
 
+export function openWheelReadingTab(api: DockviewApi) {
+    openOrCreatePanel(api, WheelSettings);
+}
+
 export function copyToClipboard(api: DockviewApi) {
     const json = api.toJSON();
     navigator.clipboard.writeText(JSON.stringify(json, null, 2)).then(() => console.log("Copied to clipboard"));
@@ -60,15 +73,32 @@ export function restoreDefaultLayout(api: DockviewApi) {
                         "type": "branch",
                         "data": [
                             {
-                                "type": "leaf",
-                                "data": {
-                                    "views": [
-                                        "gyro"
-                                    ],
-                                    "activeView": "gyro",
-                                    "id": "1"
-                                },
-                                "size": 620
+                                "type": "branch",
+                                "data": [
+                                    {
+                                        "type": "leaf",
+                                        "data": {
+                                            "views": [
+                                                "gyro"
+                                            ],
+                                            "activeView": "gyro",
+                                            "id": "1"
+                                        },
+                                        "size": 960
+                                    },
+                                    {
+                                        "type": "leaf",
+                                        "data": {
+                                            "views": [
+                                                "whl"
+                                            ],
+                                            "activeView": "whl",
+                                            "id": "4"
+                                        },
+                                        "size": 960
+                                    }
+                                ],
+                                "size": 600
                             },
                             {
                                 "type": "branch",
@@ -82,7 +112,7 @@ export function restoreDefaultLayout(api: DockviewApi) {
                                             "activeView": "vrdc",
                                             "id": "2"
                                         },
-                                        "size": 943
+                                        "size": 960
                                     },
                                     {
                                         "type": "leaf",
@@ -93,19 +123,19 @@ export function restoreDefaultLayout(api: DockviewApi) {
                                             "activeView": "infr",
                                             "id": "3"
                                         },
-                                        "size": 977
+                                        "size": 960
                                     }
                                 ],
-                                "size": 350
+                                "size": 338
                             }
                         ],
                         "size": 1920
                     }
                 ],
-                "size": 970
+                "size": 938
             },
             "width": 1920,
-            "height": 970,
+            "height": 938,
             "orientation": Orientation.HORIZONTAL
         },
         "panels": {
@@ -123,8 +153,13 @@ export function restoreDefaultLayout(api: DockviewApi) {
                 "id": "infr",
                 "contentComponent": "infr",
                 "title": "Inference Settings"
+            },
+            "whl": {
+                "id": "whl",
+                "contentComponent": "whl",
+                "title": "Wheel Reading"
             }
         },
-        "activeGroup": "1"
+        "activeGroup": "4"
     })
 }

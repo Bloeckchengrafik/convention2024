@@ -1,9 +1,9 @@
-import React, {useContext} from "react";
-import {GyroReadings} from "../state.ts";
+import {$gyroReadings} from "../state.ts";
 import {Canvas} from "@react-three/fiber";
 import {Euler, Vector3} from "three";
 import {OrbitControls} from "@react-three/drei";
 import {Model as Headset} from "../3d/Headset.tsx";
+import {useStore} from "@nanostores/react";
 
 interface AxisProps {
     direction: [number, number, number];
@@ -35,7 +35,7 @@ function format(num: number) {
 
 export function GyroReadingDisplay(params: {resetFn: () => void}) {
     const reset = params.resetFn;
-    const gyroReading = useContext(GyroReadings);
+    const gyroReading = useStore($gyroReadings);
 
     const rotation = new Euler(-gyroReading.GyroscopeReading.pitch-0.1, -gyroReading.GyroscopeReading.yaw, gyroReading.GyroscopeReading.roll+0.13, "YXZ");
     return (

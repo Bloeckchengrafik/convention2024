@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/ft_vr", "crates/input_devices", "crates/messages", "crates/vr_renderer", "crates/websocket_server"]
+members = ["crates/ft_vr", "crates/game_core", "crates/input_devices", "crates/messages", "crates/vr_renderer", "crates/websocket_server"]
 resolver = "2"
 
 [workspace.dependencies]

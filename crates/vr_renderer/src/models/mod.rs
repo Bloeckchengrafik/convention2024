@@ -9,7 +9,8 @@ mod yolonnx;
 
 
 pub trait SegmentationModel {
-    fn predict(&mut self, images: &Vec<DynamicImage>) -> Vec<GrayImage>;
+    fn predict(&mut self, images: &Vec<DynamicImage>) -> Vec<Option<GrayImage>>;
+    fn is_gpu(&self) -> bool;
 }
 
 pub fn load_model(config: &RenderSettingsData) -> Box<dyn SegmentationModel> {

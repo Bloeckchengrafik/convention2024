@@ -1,17 +1,16 @@
-mod input;
-
-use std::thread::sleep;
 use std::time::Duration;
 use log::LevelFilter;
 use pub_sub::PubSub;
+use tokio::time::sleep;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::registry::LookupSpan;
 use tracing_tracy::client::ProfiledAllocator;
+use game_core::game_main;
+use input_devices::autodetect::DeviceDriverType;
 use input_devices::InputDevices;
 use messages::{LogMessageType, VrMessage};
 use vr_renderer::vr_render_main;
 use websocket_server::websocket_server;
-use crate::input::send_inputs;
 
 // #[global_allocator]
 // static GLOBAL: ProfiledAllocator<std::alloc::System> = ProfiledAllocator::new(std::alloc::System, 100);
@@ -37,37 +36,17 @@ fn init_logging() {
         .init();
 }
 
-fn input_device_loop(bus: PubSub<VrMessage>) {
-    let sub = bus.subscribe();
-    let mut input_devices = InputDevices::new(&bus);
+async fn input_device_loop(bus: PubSub<VrMessage>) {
+    let mut input_devices = InputDevices::new(&bus).await;
     loop {
-        if let Err(errors) = input_devices.process(&bus) {
+        if let Err(errors) = input_devices.process().await {
             for e in errors {
                 let err = format!("Error processing input devices: {:?}", e);
                 let _ = bus.send(VrMessage::Log { message: err, message_type: LogMessageType::Error });
             }
-            sleep(Duration::from_millis(40));
-            continue;
         }
 
-        send_inputs(&input_devices, &bus);
-
-        loop {
-            if let Ok(message) = sub.try_recv() {
-                match message {
-                    VrMessage::SetGyroscopeZero {} => {
-                        if let Some(accelerometer) = &mut input_devices.headset_gyroscope {
-                            accelerometer.zero();
-                        }
-                    }
-                    _ => {}
-                }
-            } else {
-                break;
-            }
-        }
-
-        sleep(Duration::from_millis(40));
+        sleep(Duration::from_millis(40)).await;
     }
 }
 
@@ -79,17 +58,31 @@ fn init_tracing() {
     ).expect("setup tracy layer");
 }
 
+macro_rules! spawn_future_in_thread {
+    ($f:expr) => {
+        std::thread::spawn(move || {
+            let rt = tokio::runtime::Builder::new_multi_thread()
+                .enable_all()
+                .build()
+                .unwrap();
+            rt.block_on($f);
+        });
+    };
+}
+
 fn main() {
     init_logging();
     init_tracing();
 
     let bus = PubSub::<VrMessage>::new();
 
+    let bus_game = bus.clone();
     let bus_input = bus.clone();
     let bus_ws = bus.clone();
 
-    std::thread::spawn(move || input_device_loop(bus_input));
-    std::thread::spawn(move || websocket_server(bus_ws));
+    spawn_future_in_thread!(input_device_loop(bus_input));
+    spawn_future_in_thread!(game_main(bus_game));
+    spawn_future_in_thread!(async {websocket_server(bus_ws)});
 
     info!("Starting VR Renderer");
     vr_render_main(bus.clone());

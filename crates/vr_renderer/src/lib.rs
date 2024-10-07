@@ -12,24 +12,29 @@ use ggez::conf::{FullscreenType, WindowMode, WindowSetup};
 use ggez::event::{EventHandler, EventLoop};
 use ggez::graphics::{self, Color, DrawParam, Image, Text, TextFragment, Transform};
 use ggez::mint::{Point2, Vector2};
+use image::{DynamicImage, GenericImage, GenericImageView, GrayImage};
+use imageproc::distance_transform::Norm;
+use itertools::izip;
 use log::error;
 use pub_sub::{PubSub, Subscription};
 use tracing::{debug_span, instrument, span, trace, trace_span, Level};
-use messages::{LogMessageType, RenderSettingsData, VrMessage};
+use messages::{Interface, LogMessageType, RenderSettingsData, VrMessage};
 use crate::image_loader::{dynamic_to_ggez, ImageLoader};
 use crate::image_post_processing::postprocess;
 use messages::file_config::{read_config, save_config};
 use crate::transform::TransformSet;
 
-pub struct ImagePair {
-    pub left: Image,
-    pub right: Image,
+pub struct Images {
+    pub left_back: Image,
+    pub left_front: Image,
+    pub right_back: Image,
+    pub right_front: Image,
 }
 
 
 struct MainWindowState {
     loader: ImageLoader,
-    lowest_level: Option<ImagePair>,
+    lowest_level: Option<Images>,
     settings: RenderSettingsData,
     msgbus: PubSub<VrMessage>,
     subscription: Subscription<VrMessage>,
@@ -37,6 +42,8 @@ struct MainWindowState {
     fps_buffer: [u128; 20],
     last_frame: Instant,
     fps_buf_idx: usize,
+    // interface: Option<Interface>,
+    // wheel: VrMessage::WheelState,
 }
 
 
@@ -62,22 +69,23 @@ impl MainWindowState {
             fps_buffer: [0; 20],
             last_frame: Instant::now(),
             fps_buf_idx: 0,
+            // interface: None,
+            // wheel: VrMessage::WheelState {
+            //     rotation: 0,
+            //     left_button: false,
+            //     right_button: false,
+            //     flipped: false,
+            // },
         }
     }
 
     #[instrument]
     fn process_bus(&mut self) {
-        loop {
-            let message = self.subscription.try_recv();
-            if message.is_err() {
-                break;
-            }
-
-            let message = message.unwrap();
-
+        while let Ok(message) = self.subscription.try_recv() {
             match message {
-                VrMessage::VrDistanceConfiguration { distance_between, v_offset } => {
-                    self.settings.space_between = distance_between;
+                VrMessage::VrDistanceConfiguration { distance_between_b, distance_between_f, v_offset } => {
+                    self.settings.space_between_back = distance_between_b;
+                    self.settings.space_between_front = distance_between_f;
                     self.settings.v_offset = v_offset;
                     save_config(&self.settings);
                 }
@@ -124,24 +132,28 @@ impl EventHandler for MainWindowState {
         self.tick += 1;
         self.tick %= 3;
         self.process_bus();
-        if self.tick == 0 {
-            let (left, right) = debug_span!("loader.images()")
-                .in_scope(|| self.loader.images());
 
-            let (left, right) = debug_span!("postprocess")
-                .in_scope(|| (
-                    postprocess(left, &self.settings.left_eye),
-                    postprocess(right, &self.settings.right_eye)
-                ));
+        let ((lf, lb), (rf, rb)) = debug_span!("loader.images()")
+            .in_scope(|| self.loader.images(self.tick == 0));
 
-            debug_span!("update.lowest_level")
-                .in_scope(|| {
-                    self.lowest_level = Some(ImagePair {
-                        left: dynamic_to_ggez(ctx, left),
-                        right: dynamic_to_ggez(ctx, right),
-                    });
+        let ((lb, lf, rb, rf)) = debug_span!("postprocess")
+            .in_scope(|| (
+                postprocess(lb, &self.settings.left_eye, false),
+                postprocess(lf, &self.settings.left_eye, true),
+                postprocess(rb, &self.settings.right_eye, false),
+                postprocess(rf, &self.settings.right_eye, true)
+            ));
+
+        debug_span!("update.lowest_level")
+            .in_scope(|| {
+                self.lowest_level = Some(Images {
+                    left_back: dynamic_to_ggez(ctx, lb),
+                    left_front: dynamic_to_ggez(ctx, lf),
+                    right_back: dynamic_to_ggez(ctx, rb),
+                    right_front: dynamic_to_ggez(ctx, rf),
                 });
-        }
+            });
+
 
         Ok(())
     }
@@ -151,18 +163,36 @@ impl EventHandler for MainWindowState {
 
         let mut canvas = graphics::Canvas::from_frame(ctx, Color::BLACK);
         if let Some(lowest_level) = &self.lowest_level {
-            canvas.draw(&lowest_level.left, DrawParam {
+            canvas.draw(&lowest_level.left_back, DrawParam {
                 transform: Transform::Values {
-                    dest: Point2::from(transformations.position_left),
+                    dest: Point2::from(transformations.position_left_back),
                     rotation: 0.0,
                     scale: Vector2 { x: 1.0, y: 1.0 },
                     offset: Point2 { x: 0.0, y: 0.0 },
                 },
                 ..Default::default()
             });
-            canvas.draw(&lowest_level.right, DrawParam {
+            canvas.draw(&lowest_level.left_front, DrawParam {
                 transform: Transform::Values {
-                    dest: Point2::from(transformations.position_right),
+                    dest: Point2::from(transformations.position_left_front),
+                    rotation: 0.0,
+                    scale: Vector2 { x: 1.0, y: 1.0 },
+                    offset: Point2 { x: 0.0, y: 0.0 },
+                },
+                ..Default::default()
+            });
+            canvas.draw(&lowest_level.right_back, DrawParam {
+                transform: Transform::Values {
+                    dest: Point2::from(transformations.position_right_back),
+                    rotation: 0.0,
+                    scale: Vector2 { x: 1.0, y: 1.0 },
+                    offset: Point2 { x: 0.0, y: 0.0 },
+                },
+                ..Default::default()
+            });
+            canvas.draw(&lowest_level.right_front, DrawParam {
+                transform: Transform::Values {
+                    dest: Point2::from(transformations.position_right_front),
                     rotation: 0.0,
                     scale: Vector2 { x: 1.0, y: 1.0 },
                     offset: Point2 { x: 0.0, y: 0.0 },

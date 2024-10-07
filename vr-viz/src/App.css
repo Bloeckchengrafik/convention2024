@@ -2,7 +2,7 @@
     width: 100vw;
     height: 100vh;
     overflow: hidden;
-    font-family: "Noto Sans Mono", monospace;
+    font-family: "Ubuntu Sans Mono", monospace;
 }
 
 .padding-around {
@@ -154,7 +154,7 @@ select option {
     padding: 5px;
     color: #d4d4d4;
     border-top: 1px solid #1e1e1e;
-    height: 20px;
+    height: 30px;
 }
 
 .status-bar .status {

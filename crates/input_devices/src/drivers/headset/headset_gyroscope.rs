@@ -1,9 +1,12 @@
 use std::io::Read;
 use std::ops::Sub;
 use std::time::Duration;
+use async_trait::async_trait;
+use pub_sub::{PubSub, Subscription};
 use serialport::SerialPort;
+use messages::VrMessage;
 use crate::drivers::{DeviceDriver, DriverProcessError};
-use crate::drivers::headset_gyroscope::GyroscopeDataframeError::{LenInvalid, NumFormat, StartInvalid};
+use crate::drivers::headset::headset_gyroscope::GyroscopeDataframeError::{LenInvalid, NumFormat, StartInvalid};
 
 #[derive(Debug, Default, Copy, Clone)]
 pub struct GyroscopeDataframe {
@@ -88,21 +91,23 @@ pub struct HeadsetGyroscopeDeviceDriver {
     port: Box<dyn SerialPort>,
     pub last_data: GyroscopeDataframe,
     last_raw_data: GyroscopeDataframe,
-    last_timestamp: std::time::Instant,
     line_buffer: String,
     zero_offset: Option<GyroscopeDataframe>,
+    bus: PubSub<VrMessage>,
+    subscription: Subscription<VrMessage>,
 }
 
 impl HeadsetGyroscopeDeviceDriver {
-    pub fn new(port: Box<dyn SerialPort>) -> Self {
-        HeadsetGyroscopeDeviceDriver {
+    pub fn new(port: Box<dyn SerialPort>, bus: &PubSub<VrMessage>) -> Box<Self> {
+        Box::new(HeadsetGyroscopeDeviceDriver {
             port,
             last_data: GyroscopeDataframe::default(),
             last_raw_data: GyroscopeDataframe::default(),
-            last_timestamp: std::time::Instant::now(),
             line_buffer: String::new(),
             zero_offset: None,
-        }
+            bus: bus.clone(),
+            subscription: bus.subscribe(),
+        })
     }
 
     pub fn zero(&mut self) {
@@ -113,7 +118,6 @@ impl HeadsetGyroscopeDeviceDriver {
         let data = GyroscopeDataframe::try_from(line, self)?;
 
         self.last_data = data;
-        self.last_timestamp = std::time::Instant::now();
 
         Ok(())
     }
@@ -144,8 +148,18 @@ impl HeadsetGyroscopeDeviceDriver {
     }
 }
 
+#[async_trait]
 impl DeviceDriver for HeadsetGyroscopeDeviceDriver {
-    fn process(&mut self) -> Result<(), DriverProcessError> {
+    async fn process(&mut self) -> Result<(), DriverProcessError> {
+        while let Ok(value) = self.subscription.try_recv() {
+            match value {
+                VrMessage::SetGyroscopeZero {} => {
+                    self.zero();
+                }
+                _ => {}
+            }
+        }
+
         loop {
             let line = self.read_one_line();
             if let Some(line) = line {
@@ -155,10 +169,15 @@ impl DeviceDriver for HeadsetGyroscopeDeviceDriver {
             }
         }
 
-        Ok(())
-    }
+        let message = VrMessage::GyroscopeReading {
+            yaw: self.last_data.yaw,
+            pitch: self.last_data.pitch,
+            roll: self.last_data.roll,
+            temperature: 0f32,
+        };
 
-    fn last_communication(&self) -> Duration {
-        self.last_timestamp.elapsed()
+        self.bus.send(message).map_err(|_| DriverProcessError::BusError)?;
+
+        Ok(())
     }
 }

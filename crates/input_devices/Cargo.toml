@@ -3,11 +3,13 @@ name = "input_devices"
 version = "0.1.0"
 edition = "2021"
 
-[features]
-accelerometer = []
-
 [dependencies]
 log.workspace = true
 messages = { path = "../messages" }
 pub-sub.workspace = true
 serialport = "4.3.0"
+ftswarm = "0.2.3"
+ftswarm_serial = "0.2.3"
+strum = "0.26.3"
+strum_macros = "0.26.4"
+async-trait = "0.1.83"

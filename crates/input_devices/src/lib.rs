@@ -1,36 +1,38 @@
-use std::time::{Instant, SystemTime};
-use crate::drivers::{DeviceDriver, DriverProcessError};
+use crate::drivers::swarm::VrSwarm;
+use crate::drivers::{DeviceDriver, DriverProcessError, IdentifiedDeviceDriver};
 use messages::VrMessage;
 use pub_sub::PubSub;
+use std::time::Instant;
 
 pub mod autodetect;
 mod drivers;
 
 pub struct InputDevices {
-    pub headset_gyroscope: Option<drivers::headset_gyroscope::HeadsetGyroscopeDeviceDriver>,
+    pub drivers: Vec<IdentifiedDeviceDriver>,
 
-    last_update: Instant
+    swarm: Option<VrSwarm>,
+    last_update: Instant,
+    bus: PubSub<VrMessage>,
 }
 
 impl InputDevices {
-    pub fn new(_bus: &PubSub<VrMessage>) -> InputDevices {
-        autodetect::autodetect_input_devices()
+    pub async fn new(bus: &PubSub<VrMessage>) -> InputDevices {
+        autodetect::autodetect_input_devices(bus).await
     }
 
-    pub fn process(&mut self, bus: &PubSub<VrMessage>) -> Result<(), Vec<DriverProcessError>> {
+    pub async fn process(&mut self) -> Result<(), Vec<DriverProcessError>> {
         let mut errors = Vec::new();
-        if let Some(gyroscope) = &mut self.headset_gyroscope {
-            if let Err(error) = gyroscope.process() {
+
+        for mut driver in &mut self.drivers {
+            if let Err(error) = driver.process().await {
                 errors.push(error);
             }
         }
 
         if self.last_update.elapsed().as_secs() > 1 {
             self.last_update = Instant::now();
-            bus.send(VrMessage::DriverStateUpdate {
-                gyro_online: self.headset_gyroscope.is_some(),
-                swarm_online: true,
-                server_time: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs(),
+            self.bus.send(VrMessage::DriverStateUpdate {
+                states: self.drivers.iter().map(|x| x.into()).collect()
             }).unwrap();
         }
 

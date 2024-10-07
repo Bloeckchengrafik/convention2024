@@ -2,7 +2,7 @@ use image::{DynamicImage, GrayImage};
 use tracing::{debug, trace};
 use messages::ModelConfiguration;
 use crate::models::SegmentationModel;
-use crate::models::yolo::{Args, YOLOResult, YOLO};
+use crate::models::yolo::{Args, OrtEP, YOLOResult, YOLO};
 
 pub enum YoloV8ONNXQuantization {
     Int8,
@@ -60,7 +60,7 @@ impl YoloONNXSegmentationModel {
 }
 
 impl SegmentationModel for YoloONNXSegmentationModel {
-    fn predict(&mut self, images: &Vec<DynamicImage>) -> Vec<GrayImage> {
+    fn predict(&mut self, images: &Vec<DynamicImage>) -> Vec<Option<GrayImage>> {
         let _span = tracing::debug_span!("YoloONNXSegmentationModel::predict");
         let images = images.iter()
             .map(|it|
@@ -81,7 +81,7 @@ impl SegmentationModel for YoloONNXSegmentationModel {
             .map(|(result, img)| {
                 let _span = tracing::debug_span!("YoloONNXSegmentationModel::postprocess");
                 if result.bboxes.is_none() || result.masks.is_none() {
-                    return GrayImage::new(img.width(), img.height());
+                    return None;
                 }
 
                 debug!("Got bboxes and masks");
@@ -106,11 +106,15 @@ impl SegmentationModel for YoloONNXSegmentationModel {
                 let final_mask = GrayImage::from_raw(img.width(), img.height(), mask_data).unwrap();
 
                 debug!("Processed masks");
-                final_mask
+                Some(final_mask)
             }).collect();
 
         debug!("Returning result");
 
         result
+    }
+
+    fn is_gpu(&self) -> bool {
+        !matches!(self.model.engine().ep(), OrtEP::Cpu)
     }
 }

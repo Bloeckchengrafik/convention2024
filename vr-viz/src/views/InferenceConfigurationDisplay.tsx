@@ -1,10 +1,10 @@
 import {ModelConfiguration, models} from "../types.ts";
-import {useContext} from "react";
-import {InferenceReadings} from "../state.ts";
+import {$inferenceReadings} from "../state.ts";
+import {useStore} from "@nanostores/react";
 
 function InferenceConfigurationDisplay(props: { setter: (_: ModelConfiguration) => void }) {
     const {setter} = props;
-    const reading = useContext(InferenceReadings);
+    const reading = useStore($inferenceReadings);
 
     function patch(partial: Partial<ModelConfiguration["ModelConfiguration"]>) {
         setter({

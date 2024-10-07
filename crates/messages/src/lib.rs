@@ -13,7 +13,8 @@ pub struct RenderSettingsData {
     pub left_eye: EyeSettings,
     pub right_eye: EyeSettings,
     pub v_offset: i32,
-    pub space_between: i32,
+    pub space_between_back: i32,
+    pub space_between_front: i32,
     pub model: ModelType,
     pub model_configuration: ModelConfiguration,
 }
@@ -30,7 +31,8 @@ impl Default for RenderSettingsData {
                 image_height: 480,
             },
             v_offset: 0,
-            space_between: 0,
+            space_between_back: 0,
+            space_between_front: 0,
             model: ModelType::YoloV8mInt8ONNX,
             model_configuration: ModelConfiguration {
                 confidence: 0.25,
@@ -54,6 +56,12 @@ pub enum ModelType {
     YoloV11mFullONNX,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, Copy)]
+pub enum PedalPosition {
+    Lower,
+    Upper,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ModelConfiguration {
     pub confidence: f32,
@@ -70,6 +78,25 @@ pub enum LogMessageType {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum DriverState {
+    Online {
+        name: String
+    },
+    Offline {
+        name: String
+    },
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum Interface {
+    None,
+    InputNumberAndConfirm {
+        number: u8,
+        text: String,
+    },
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum VrMessage {
     GyroscopeReading {
         yaw: f32,
@@ -79,7 +106,8 @@ pub enum VrMessage {
     },
     SetGyroscopeZero {},
     VrDistanceConfiguration {
-        distance_between: i32,
+        distance_between_b: i32,
+        distance_between_f: i32,
         v_offset: i32,
     },
     ModelConfiguration {
@@ -97,13 +125,34 @@ pub enum VrMessage {
         rotation: i128,
         left_button: bool,
         right_button: bool,
+        flipped: bool,
     },
     DriverStateUpdate {
-        gyro_online: bool,
-        swarm_online: bool,
-        server_time: u64,
+        states: Vec<DriverState>
     },
     FPSUpdate {
         fps: f32,
-    }
+    },
+    ResetWheel {},
+    FlipWheelBtns {
+        flip: bool,
+    },
+    PedalState {
+        pressed: u8
+    },
+    ZeroPedal {
+        position: PedalPosition
+    },
+    ShowRenderedInterface {
+        interface: Interface
+    },
+    InterfaceConfirm {
+        data: Interface
+    },
+    AskPin {
+        length: u8,
+    },
+    ConfirmPin {
+        pin: String,
+    },
 }
