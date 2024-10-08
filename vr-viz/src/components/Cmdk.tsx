@@ -11,7 +11,7 @@ import CommandPalette, {
 import {
     copyToClipboard,
     openGyroTab,
-    openInferenceSettingsTab,
+    openInferenceSettingsTab, openOptimizerInfoTab, openServoSettingsTab,
     openVrDistanceConfigurationTab, openWheelReadingTab,
     restoreDefaultLayout
 } from "../dockviewapi.ts";
@@ -49,6 +49,8 @@ function Cmdk(props: { dockview: DockviewApi | undefined }) {
                     view("VR Distance Configuration", "ViewfinderCircleIcon", openVrDistanceConfigurationTab.bind(null, api)),
                     view("Inference Settings", "ServerIcon", openInferenceSettingsTab.bind(null, api)),
                     view("Wheel Reading", "EllipsisHorizontalCircleIcon", openWheelReadingTab.bind(null, api)),
+                    view("Servo Config", "AdjustmentsHorizontalIcon", openServoSettingsTab.bind(null, api)),
+                    view("Optimizer Info", "PresentationChartLineIcon", openOptimizerInfoTab.bind(null, api)),
                 ],
             },
             {

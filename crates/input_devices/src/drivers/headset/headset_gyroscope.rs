@@ -1,6 +1,5 @@
 use std::io::Read;
 use std::ops::Sub;
-use std::time::Duration;
 use async_trait::async_trait;
 use pub_sub::{PubSub, Subscription};
 use serialport::SerialPort;
@@ -98,15 +97,15 @@ pub struct HeadsetGyroscopeDeviceDriver {
 }
 
 impl HeadsetGyroscopeDeviceDriver {
-    pub fn new(port: Box<dyn SerialPort>, bus: &PubSub<VrMessage>) -> Box<Self> {
+    pub fn new(port: Box<dyn SerialPort>, bus: PubSub<VrMessage>) -> Box<dyn DeviceDriver> {
         Box::new(HeadsetGyroscopeDeviceDriver {
             port,
             last_data: GyroscopeDataframe::default(),
             last_raw_data: GyroscopeDataframe::default(),
             line_buffer: String::new(),
             zero_offset: None,
-            bus: bus.clone(),
             subscription: bus.subscribe(),
+            bus,
         })
     }
 

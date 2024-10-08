@@ -1,13 +1,16 @@
 use std::fmt::Debug;
+use std::future::Future;
+use std::pin::Pin;
 use pub_sub::PubSub;
 use serialport::SerialPortType;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 use DeviceDriverType::HeadsetGyroscope;
 use messages::VrMessage;
-use crate::autodetect::DeviceDriverType::SteeringWheel;
+use crate::autodetect::DeviceDriverType::{Car, SteeringWheel};
 use crate::drivers::headset::headset_gyroscope::HeadsetGyroscopeDeviceDriver;
 use crate::drivers::{DeviceDriver, IdentifiedDeviceDriver};
+use crate::drivers::swarm::car::CarDriver;
 use crate::drivers::swarm::steering_wheel::SteeringWheelDriver;
 use crate::drivers::swarm::VrSwarm;
 use crate::InputDevices;
@@ -16,6 +19,7 @@ use crate::InputDevices;
 pub enum DeviceDriverType {
     HeadsetGyroscope,
     SteeringWheel,
+    Car,
 }
 
 impl DeviceDriverType {
@@ -23,6 +27,8 @@ impl DeviceDriverType {
         format!("{:?}", self).to_string()
     }
 }
+
+pub type BuildableDriver = Box<dyn FnOnce() -> Pin<Box<dyn Future<Output = Box<dyn DeviceDriver>>>>>;
 
 struct AutodetectDeviceDriverList {
     drivers: Vec<IdentifiedDeviceDriver>,
@@ -35,7 +41,7 @@ impl AutodetectDeviceDriverList {
         }
     }
 
-    fn push(&mut self, kind: DeviceDriverType, driver: Box<dyn DeviceDriver + Send>) {
+    fn push(&mut self, kind: DeviceDriverType, driver: BuildableDriver) {
         // Check if the driver is already in the list, if so, replace it
         let name = kind.to_string();
         let found = self.drivers.iter_mut().find(|x| x.name == name);
@@ -65,6 +71,18 @@ impl AutodetectDeviceDriverList {
     }
 }
 
+macro_rules! sync_driver {
+    ($constructor:expr) => {
+        Box::new(|| Box::pin(async { $constructor }))
+    };
+}
+
+macro_rules! async_driver {
+    ($constructor:expr) => {
+        Box::new(|| Box::pin( $constructor ))
+    };
+}
+
 pub async fn autodetect_input_devices(bus: &PubSub<VrMessage>) -> InputDevices {
     let mut drivers = AutodetectDeviceDriverList::new();
     let mut swarm: Option<VrSwarm> = None;
@@ -87,11 +105,22 @@ pub async fn autodetect_input_devices(bus: &PubSub<VrMessage>) -> InputDevices {
                 .open()
                 .expect(format!("Failed to open serial port at {}", port_name).as_str());
 
-            drivers.push(HeadsetGyroscope, HeadsetGyroscopeDeviceDriver::new(port, &bus));
+            let bus = bus.clone();
+            drivers.push(HeadsetGyroscope, sync_driver!(HeadsetGyroscopeDeviceDriver::new(port, bus)));
         } else if port_vendor == "1a86" { // CH341 USB to serial (ftSwarm)
             let vr_swarm = VrSwarm::new(&port_name).await;
 
-            drivers.push(SteeringWheel, SteeringWheelDriver::new(&vr_swarm, &bus));
+            if option_env!("C24_DISABLE_STEERINGWHEEL").is_none() {
+                let vr_swarm = vr_swarm.clone();
+                let bus = bus.clone();
+                drivers.push(SteeringWheel, async_driver!(SteeringWheelDriver::new(vr_swarm, bus)));
+            }
+
+            if option_env!("C24_DISABLE_CAR").is_none() {
+                let vr_swarm = vr_swarm.clone();
+                let bus = bus.clone();
+                drivers.push(Car, async_driver!(CarDriver::new(vr_swarm, bus)));
+            }
 
             swarm = Some(vr_swarm);
         }

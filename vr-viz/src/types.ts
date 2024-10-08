@@ -47,6 +47,16 @@ export type ModelConfiguration = {
     }
 }
 
+export type ServoConfiguration = {
+    SetServoConfig: {
+        config: {
+            steer_offset: number;
+            yaw_offset: number;
+            pitch_offset: number;
+        }
+    }
+}
+
 export type PushRenderSettings = {
     PushRenderSettings: {
         data: {
@@ -60,6 +70,11 @@ export type PushRenderSettings = {
                 confidence: number;
                 iou: number;
                 kconf: number;
+            },
+            servo_config: {
+                steer_offset: number;
+                yaw_offset: number;
+                pitch_offset: number;
             }
         }
     }
@@ -131,7 +146,8 @@ export type WebsocketMessage = GyroMessage
     | FlipWheelBtns
     | PedalState
     | ZeroPedal
-;
+    | ServoConfiguration
+    ;
 
 export type FullWebsocketMessage = GyroMessage
     & VrDistanceConfiguration
@@ -145,4 +161,5 @@ export type FullWebsocketMessage = GyroMessage
     & FlipWheelBtns
     & PedalState
     & ZeroPedal
-;
+    & ServoConfiguration
+    ;

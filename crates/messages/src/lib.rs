@@ -3,6 +3,13 @@ use serde::{Deserialize, Serialize};
 pub mod file_config;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ServoConfig {
+    pub steer_offset: i32,
+    pub yaw_offset: i32,
+    pub pitch_offset: i32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct EyeSettings {
     pub image_width: u32,
     pub image_height: u32,
@@ -17,6 +24,7 @@ pub struct RenderSettingsData {
     pub space_between_front: i32,
     pub model: ModelType,
     pub model_configuration: ModelConfiguration,
+    pub servo_config: ServoConfig
 }
 
 impl Default for RenderSettingsData {
@@ -39,6 +47,11 @@ impl Default for RenderSettingsData {
                 iou: 0.7,
                 kconf: 0.55,
             },
+            servo_config: ServoConfig {
+                steer_offset: 0,
+                yaw_offset: 0,
+                pitch_offset: 0,
+            }
         }
     }
 }
@@ -154,5 +167,8 @@ pub enum VrMessage {
     },
     ConfirmPin {
         pin: String,
+    },
+    SetServoConfig {
+        config: ServoConfig,
     },
 }

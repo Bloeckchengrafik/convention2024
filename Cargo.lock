@@ -999,9 +999,9 @@ dependencies = [
 
 [[package]]
 name = "ftswarm"
-version = "0.2.3"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d05992e762f5ed2af49a3c6598f0ae0b46ed6c273b9ea7b9affa5e0be2de61d"
+checksum = "a1cf567cf023ef1b417c67cead2e35ba85eb985432de042df8f2dff0b76458ad"
 dependencies = [
  "ftswarm_macros",
  "ftswarm_proto",
@@ -1013,9 +1013,9 @@ dependencies = [
 
 [[package]]
 name = "ftswarm_macros"
-version = "0.2.3"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a7f9509ca24c0dcc7156291e47535eccbaabf3b60e3aded2fea1f323dd353ce"
+checksum = "ca6990ab33d290efafcee490543b574f2e5653cb29d9f2ce983c7751200b298c"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1024,9 +1024,9 @@ dependencies = [
 
 [[package]]
 name = "ftswarm_proto"
-version = "0.2.3"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77e00b5b9dc880a0e5b9e2f801be735119f5313081f053d0212b9c9e04e30b68"
+checksum = "14a960f4937d25378524d3f488298f48acbcf6aa852c419da5ff8fbdcbcc5943"
 dependencies = [
  "strum",
  "strum_macros",
@@ -1034,9 +1034,9 @@ dependencies = [
 
 [[package]]
 name = "ftswarm_serial"
-version = "0.2.3"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70b35eb99642e4234f72b55750f041326ec4918f0aad14b9e09c01be4b546e2b"
+checksum = "cd8eb5e822d42de58b092326cbec9f870cef131b3ef141a2cd82317eb39a0dfe"
 dependencies = [
  "log",
  "serialport",
@@ -1691,6 +1691,7 @@ dependencies = [
  "serialport",
  "strum",
  "strum_macros",
+ "tokio",
 ]
 
 [[package]]
