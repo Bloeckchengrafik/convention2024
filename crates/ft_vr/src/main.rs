@@ -6,7 +6,6 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::registry::LookupSpan;
 use tracing_tracy::client::ProfiledAllocator;
 use game_core::game_main;
-use input_devices::autodetect::DeviceDriverType;
 use input_devices::InputDevices;
 use messages::{LogMessageType, VrMessage};
 use vr_renderer::vr_render_main;

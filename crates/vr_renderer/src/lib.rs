@@ -6,18 +6,15 @@ mod models;
 mod imgstream;
 
 use std::fmt::{Debug, Formatter};
-use std::time::{Instant};
+use std::time::Instant;
 use ggez::{Context, GameResult};
 use ggez::conf::{FullscreenType, WindowMode, WindowSetup};
 use ggez::event::{EventHandler, EventLoop};
-use ggez::graphics::{self, Color, DrawParam, Image, Text, TextFragment, Transform};
+use ggez::graphics::{self, Color, DrawParam, Image, Transform};
 use ggez::mint::{Point2, Vector2};
-use image::{DynamicImage, GenericImage, GenericImageView, GrayImage};
-use imageproc::distance_transform::Norm;
-use itertools::izip;
 use log::error;
 use pub_sub::{PubSub, Subscription};
-use tracing::{debug_span, instrument, span, trace, trace_span, Level};
+use tracing::{debug_span, instrument};
 use messages::{Interface, LogMessageType, RenderSettingsData, VrMessage};
 use crate::image_loader::{dynamic_to_ggez, ImageLoader};
 use crate::image_post_processing::postprocess;
@@ -42,8 +39,9 @@ struct MainWindowState {
     fps_buffer: [u128; 20],
     last_frame: Instant,
     fps_buf_idx: usize,
-    // interface: Option<Interface>,
-    // wheel: VrMessage::WheelState,
+    interface: Option<Interface>,
+    whl_rot: i128,
+    whl_btn: bool
 }
 
 
@@ -69,13 +67,9 @@ impl MainWindowState {
             fps_buffer: [0; 20],
             last_frame: Instant::now(),
             fps_buf_idx: 0,
-            // interface: None,
-            // wheel: VrMessage::WheelState {
-            //     rotation: 0,
-            //     left_button: false,
-            //     right_button: false,
-            //     flipped: false,
-            // },
+            interface: None,
+            whl_rot: 0,
+            whl_btn: false
         }
     }
 
@@ -100,6 +94,15 @@ impl MainWindowState {
                         message: format!("Model changed to {:?}", model),
                         message_type: LogMessageType::Info,
                     });
+                }
+
+                VrMessage::WheelState { rotation, left_button, right_button, .. } => {
+                    self.whl_rot = rotation;
+                    self.whl_btn = left_button || right_button;
+                }
+
+                VrMessage::ShowRenderedInterface { interface } => {
+                    self.interface = Some(interface)
                 }
 
                 _ => {}
@@ -136,7 +139,7 @@ impl EventHandler for MainWindowState {
         let ((lf, lb), (rf, rb)) = debug_span!("loader.images()")
             .in_scope(|| self.loader.images(self.tick == 0));
 
-        let ((lb, lf, rb, rf)) = debug_span!("postprocess")
+        let (lb, lf, rb, rf) = debug_span!("postprocess")
             .in_scope(|| (
                 postprocess(lb, &self.settings.left_eye, false),
                 postprocess(lf, &self.settings.left_eye, true),
