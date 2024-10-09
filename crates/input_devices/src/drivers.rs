@@ -1,5 +1,5 @@
-use async_trait::async_trait;
 use messages::DriverState;
+use crate::autodetect::BuildableDriver;
 
 pub mod swarm;
 pub mod headset;
@@ -8,7 +8,8 @@ pub mod headset;
 pub enum DriverProcessError {
     DataframeError(String),
     IoError,
-    BusError
+    BusError,
+    SwarmError,
 }
 
 #[async_trait::async_trait]
@@ -17,22 +18,9 @@ pub trait DeviceDriver {
 }
 
 pub struct IdentifiedDeviceDriver {
-    pub driver: Option<Box<dyn DeviceDriver + Send>>,
+    pub driver: Option<BuildableDriver>,
     pub name: String,
 }
-
-#[async_trait]
-impl DeviceDriver for IdentifiedDeviceDriver {
-    async fn process(&mut self) -> Result<(), DriverProcessError> {
-        if let Some(driver) = &mut self.driver {
-            driver.process().await
-        } else {
-            // Not all drivers are required
-            Ok(())
-        }
-    }
-}
-
 impl IdentifiedDeviceDriver {
     pub fn into(&self) -> DriverState {
         if self.driver.is_some() {

@@ -3,7 +3,7 @@ import {
     $drvStateReading,
     $fpsReading,
     $gyroReadings,
-    $inferenceReadings, $pedalReadings,
+    $inferenceReadings, $pedalReadings, $servoReading,
     $vrDistanceConfigurationReadings, $wheelReadings
 } from "./state.ts";
 import {terror, tinfo, tmessage, twarning} from "./toasties.ts";
@@ -49,6 +49,11 @@ export const processors: Partial<Processors> = {
                     iou: msg.PushRenderSettings.data.model_configuration.iou,
                     kconf: msg.PushRenderSettings.data.model_configuration.kconf,
                 }
+            }
+        })
+        $servoReading.set({
+            SetServoConfig: {
+                config: msg.PushRenderSettings.data.servo_config
             }
         })
         toast.success("Loaded config", {

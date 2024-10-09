@@ -8,8 +8,9 @@ log.workspace = true
 messages = { path = "../messages" }
 pub-sub.workspace = true
 serialport = "4.3.0"
-ftswarm = "0.2.3"
-ftswarm_serial = "0.2.3"
+ftswarm = { version = "0.2.4", features = ["tokio_mutex"] }
+ftswarm_serial = "0.2.4"
 strum = "0.26.3"
 strum_macros = "0.26.4"
 async-trait = "0.1.83"
+tokio = { version = "1.40.0", features = ["full"] }

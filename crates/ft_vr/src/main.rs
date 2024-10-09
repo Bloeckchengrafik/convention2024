@@ -3,7 +3,6 @@ use log::LevelFilter;
 use pub_sub::PubSub;
 use tokio::time::sleep;
 use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::registry::LookupSpan;
 use tracing_tracy::client::ProfiledAllocator;
 use game_core::game_main;
 use input_devices::InputDevices;
@@ -37,13 +36,21 @@ fn init_logging() {
 
 async fn input_device_loop(bus: PubSub<VrMessage>) {
     let mut input_devices = InputDevices::new(&bus).await;
+    let mut device_drivers = input_devices.build().await;
     loop {
-        if let Err(errors) = input_devices.process().await {
-            for e in errors {
-                let err = format!("Error processing input devices: {:?}", e);
-                let _ = bus.send(VrMessage::Log { message: err, message_type: LogMessageType::Error });
+        let mut errors = vec![];
+        for driver in &mut device_drivers {
+            if let Err(e) = driver.process().await {
+                errors.push(e);
             }
         }
+
+        for e in errors {
+            let err = format!("Error processing input devices: {:?}", e);
+            let _ = bus.send(VrMessage::Log { message: err, message_type: LogMessageType::Error });
+        }
+
+        input_devices.process().await;
 
         sleep(Duration::from_millis(40)).await;
     }

@@ -2,7 +2,7 @@ import {
     DriverStateUpdate,
     FPSUpdate,
     GyroMessage,
-    ModelConfiguration, PedalState,
+    ModelConfiguration, PedalState, ServoConfiguration,
     VrDistanceConfiguration,
     WheelState
 } from "./types.ts";
@@ -41,4 +41,14 @@ export const $drvStateReading = atom<DriverStateUpdate>({
 
 export const $fpsReading = atom<FPSUpdate>({
     FPSUpdate: {fps: 0}
+});
+
+export const $servoReading = atom<ServoConfiguration>({
+    SetServoConfig: {
+        config: {
+            steer_offset: 0,
+            yaw_offset: 0,
+            pitch_offset: 0,
+        }
+    }
 });

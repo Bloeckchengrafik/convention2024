@@ -19,14 +19,23 @@ const inferenceSettings = {
     "title": "Inference Settings",
 }
 
-
-
-const WheelSettings = {
+const wheelSettings = {
     "id": "whl",
     "component": "whl",
     "title": "Wheel Reading",
 }
 
+const servoSettings = {
+    "id": "srvo",
+    "component": "srvo",
+    "title": "Servo Settings",
+}
+
+const optimizerSettings = {
+    "id": "optm",
+    "component": "optm",
+    "title": "Optimizer Info",
+}
 
 function openOrCreatePanel(api: DockviewApi, panelDefinition: AddPanelOptions) {
     const panelId = panelDefinition.id;
@@ -52,7 +61,15 @@ export function openInferenceSettingsTab(api: DockviewApi) {
 }
 
 export function openWheelReadingTab(api: DockviewApi) {
-    openOrCreatePanel(api, WheelSettings);
+    openOrCreatePanel(api, wheelSettings);
+}
+
+export function openServoSettingsTab(api: DockviewApi) {
+    openOrCreatePanel(api, servoSettings);
+}
+
+export function openOptimizerInfoTab(api: DockviewApi) {
+    openOrCreatePanel(api, optimizerSettings);
 }
 
 export function copyToClipboard(api: DockviewApi) {
@@ -98,7 +115,7 @@ export function restoreDefaultLayout(api: DockviewApi) {
                                         "size": 960
                                     }
                                 ],
-                                "size": 600
+                                "size": 601
                             },
                             {
                                 "type": "branch",
@@ -112,7 +129,18 @@ export function restoreDefaultLayout(api: DockviewApi) {
                                             "activeView": "vrdc",
                                             "id": "2"
                                         },
-                                        "size": 960
+                                        "size": 480
+                                    },
+                                    {
+                                        "type": "leaf",
+                                        "data": {
+                                            "views": [
+                                                "srvo"
+                                            ],
+                                            "activeView": "srvo",
+                                            "id": "6"
+                                        },
+                                        "size": 480
                                     },
                                     {
                                         "type": "leaf",
@@ -123,19 +151,30 @@ export function restoreDefaultLayout(api: DockviewApi) {
                                             "activeView": "infr",
                                             "id": "3"
                                         },
-                                        "size": 960
+                                        "size": 480
+                                    },
+                                    {
+                                        "type": "leaf",
+                                        "data": {
+                                            "views": [
+                                                "optm"
+                                            ],
+                                            "activeView": "optm",
+                                            "id": "5"
+                                        },
+                                        "size": 480
                                     }
                                 ],
-                                "size": 338
+                                "size": 339
                             }
                         ],
                         "size": 1920
                     }
                 ],
-                "size": 938
+                "size": 940
             },
             "width": 1920,
-            "height": 938,
+            "height": 940,
             "orientation": Orientation.HORIZONTAL
         },
         "panels": {
@@ -143,6 +182,11 @@ export function restoreDefaultLayout(api: DockviewApi) {
                 "id": "gyro",
                 "contentComponent": "gyro",
                 "title": "Gyroscope"
+            },
+            "whl": {
+                "id": "whl",
+                "contentComponent": "whl",
+                "title": "Wheel Reading"
             },
             "vrdc": {
                 "id": "vrdc",
@@ -154,10 +198,15 @@ export function restoreDefaultLayout(api: DockviewApi) {
                 "contentComponent": "infr",
                 "title": "Inference Settings"
             },
-            "whl": {
-                "id": "whl",
-                "contentComponent": "whl",
-                "title": "Wheel Reading"
+            "optm": {
+                "id": "optm",
+                "contentComponent": "optm",
+                "title": "Optimizer Info"
+            },
+            "srvo": {
+                "id": "srvo",
+                "contentComponent": "srvo",
+                "title": "Servo Settings"
             }
         },
         "activeGroup": "4"

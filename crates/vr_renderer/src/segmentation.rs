@@ -26,6 +26,7 @@ impl SegmentationCache {
             last_masks: vec![],
         }
     }
+
     pub fn reload(&mut self, config: &RenderSettingsData) {
         self.model = load_model(&config)
     }
@@ -88,6 +89,7 @@ impl SegmentationCache {
                 self.last_masks.clone()
             }
         });
+
         debug_span!("apply_masks").in_scope(|| masks
             .into_iter()
             .zip(hands.iter())

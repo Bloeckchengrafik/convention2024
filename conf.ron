@@ -16,4 +16,9 @@
         iou: 0.75,
         kconf: 0.55,
     ),
+    servo_config: (
+        steer_offset: 0,
+        yaw_offset: 0,
+        pitch_offset: 0,
+    ),
 )
