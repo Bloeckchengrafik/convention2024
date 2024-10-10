@@ -61,7 +61,8 @@ const IOCmdList_t IOCmdList [CLICMD_MAX] = {
   { "stop", 0, 0},
   { "homing", 1, 1},
   { "isHoming", 0, 0},
-  { "setHomingOffset", 1, 1}
+  { "setHomingOffset", 1, 1},
+  { "getThrottle", 0, 0}
 };
 
 typedef struct {
@@ -88,6 +89,7 @@ SwOSCLI::SwOSCLI() {
   _line[0] = '\0';
   _evalPtr = NULL;
   _start   = NULL;
+  _global = new GlobalCommandExecutor();
 }
 
 void SwOSCLI::Error( Error_t error, int expected, int found ) {
@@ -830,6 +832,11 @@ void SwOSCLI::executeI2CCmd( void ) {
 
 void SwOSCLI::executeIOCommand( void ) {
 
+  if (globalCommand) {
+    _global->run(_cmd, _parameter, _maxParameter);
+    return;
+  }
+
   if ( (!_io) && (_ctrl ) ) {
     // controller cmd?
     executeControllerCmd( );
@@ -881,11 +888,19 @@ bool SwOSCLI::tokenizeCmd( char *cmd ) {
 
 }
 
-bool  SwOSCLI::getIO( char *token, char *IOName, SwOSCtrl **ctrl, SwOSIO **io ) {
+bool  SwOSCLI::getIO( char *token, char *IOName, SwOSCtrl **ctrl, SwOSIO **io, bool *global ) {
   
   SwOSCtrl *_ctrl = NULL;
   SwOSIO   *_io   = NULL;
+  bool globalCommand = false;
   char     *_rollback;
+
+  // if token is "hglob"
+  if ( strcmp( token, "hglob" ) == 0 ) {
+    globalCommand = true;
+    
+    return true;
+  }
 
   _ctrl = (SwOSCtrl *)myOSSwarm.getController( token );
   if (_ctrl) { 
@@ -924,6 +939,7 @@ bool  SwOSCLI::getIO( char *token, char *IOName, SwOSCtrl **ctrl, SwOSIO **io ) 
   // copy resultgetIO
   *ctrl = _ctrl;
   *io   = _io;
+  *global = globalCommand;
 
   return true;
 
@@ -939,7 +955,8 @@ void SwOSCLI::evalIOCommand( char *token ) {
   char     paramIOName[CLIMAXLINE];
 
   // check, if the token is a controller or an io
-  if (!getIO( token, IOName, &_ctrl, &_io ) ) { Error( ERROR_IOEXPECTED ); return; }
+  
+  if (!getIO( token, IOName, &_ctrl, &_io, &globalCommand ) ) { Error( ERROR_IOEXPECTED ); return; }
 
   // unvalid io?
   if ( ( !_io ) && ( !_ctrl ) ) { Error( ERROR_IOEXPECTED ); return; }
@@ -963,7 +980,7 @@ void SwOSCLI::evalIOCommand( char *token ) {
 
         // get a parameter
         switch ( getNextToken( token ) ) {
-          case EVAL_LITERAL:        if ( ( getIO( token, paramIOName, &paramCtrl, &paramIO ) ) && ( &paramIO ) ) {
+          case EVAL_LITERAL:        if ( ( getIO( token, paramIOName, &paramCtrl, &paramIO, &globalCommand ) ) && ( &paramIO ) ) {
                                       _maxParameter++;
                                       _parameter[_maxParameter].setValue(paramIO, paramIOName);
                                     } else {
@@ -1030,6 +1047,10 @@ void SwOSCLI::evalIOCommand( char *token ) {
   
   }
 
+}
+
+void SwOSCLI::readln (void) {
+    enterString( prompt, _line, CLIMAXLINE-1 );
 }
 
 void SwOSCLI::run( void ) {

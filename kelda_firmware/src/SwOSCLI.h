@@ -54,6 +54,11 @@ typedef enum {
   ERROR_WRONGNUMBEROFARGUMENTS
 } Error_t;
 
+class GlobalCommandExecutor {
+  public:
+    void run( CLICmd_t cmd, SwOSCLIParameter *param, int maxParam );
+};
+
 class SwOSCLI {
   protected:
 
@@ -63,6 +68,8 @@ class SwOSCLI {
 
     char   *_evalPtr;
     char   *_start;
+    bool   globalCommand;
+    GlobalCommandExecutor *_global;
     SwOSIO *_io = NULL;
     SwOSCtrl *_ctrl = NULL;
     CLICmd_t _cmd;
@@ -79,7 +86,7 @@ class SwOSCLI {
     EvalResult_t getNumber( void );
     EvalResult_t getLiteral( void );
     EvalResult_t getNextToken( char* token );
-    bool getIO( char *token, char *IOName, SwOSCtrl **ctrl, SwOSIO **io);
+    bool getIO( char *token, char *IOName, SwOSCtrl **ctrl, SwOSIO **io, bool *glob);
 
     bool tokenizeConstant( char *token, int param); 
     bool tokenizeCmd( char *cmd );
@@ -94,7 +101,6 @@ class SwOSCLI {
     void executeI2CCmd( void );
     void executeIOCommand( void );
     void executeControllerCmd( void );
-    bool eval( void );
     void help( void );
     void startCLI( bool noEcho );
     void halt( void );
@@ -102,6 +108,8 @@ class SwOSCLI {
   public:
     SwOSCLI();
     void run(void);
+    bool eval( void );
+    void readln( void );
 };
 
 extern void mainMenu( void );
