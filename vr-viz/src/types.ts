@@ -11,6 +11,7 @@ export type VrDistanceConfiguration = {
     VrDistanceConfiguration: {
         distance_between_b: number;
         distance_between_f: number;
+        distance_between_u: number;
         v_offset: number;
     }
 }
@@ -57,6 +58,12 @@ export type ServoConfiguration = {
     }
 }
 
+export type LeaderboardEntry = {
+    name: string;
+    time: number;
+    id: number;
+}
+
 export type PushRenderSettings = {
     PushRenderSettings: {
         data: {
@@ -65,6 +72,7 @@ export type PushRenderSettings = {
             v_offset: number;
             space_between_back: number;
             space_between_front: number;
+            space_between_ui: number;
             model: Model;
             model_configuration: {
                 confidence: number;
@@ -75,7 +83,8 @@ export type PushRenderSettings = {
                 steer_offset: number;
                 yaw_offset: number;
                 pitch_offset: number;
-            }
+            },
+            leaderboard: LeaderboardEntry[];
         }
     }
 }
@@ -134,6 +143,28 @@ export type ZeroPedal = {
     }
 }
 
+export type TimerStart = {
+    TimerStart: {
+        name: string;
+    }
+}
+
+export type TimerEnd = {
+    TimerEnd: Record<string, never>
+}
+
+export type PushTimerEntry = {
+    PushTimerEntry: {
+        entry: LeaderboardEntry;
+    }
+}
+
+export type DeleteTimerEntry = {
+    DeleteTimerEntry: {
+        id: number;
+    }
+}
+
 export type WebsocketMessage = GyroMessage
     | VrDistanceConfiguration
     | LogMessage
@@ -147,6 +178,10 @@ export type WebsocketMessage = GyroMessage
     | PedalState
     | ZeroPedal
     | ServoConfiguration
+    | TimerStart
+    | TimerEnd
+    | PushTimerEntry
+    | DeleteTimerEntry
     ;
 
 export type FullWebsocketMessage = GyroMessage
@@ -162,4 +197,8 @@ export type FullWebsocketMessage = GyroMessage
     & PedalState
     & ZeroPedal
     & ServoConfiguration
+    & TimerStart
+    & TimerEnd
+    & PushTimerEntry
+    & DeleteTimerEntry
     ;

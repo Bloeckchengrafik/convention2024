@@ -89,7 +89,6 @@ SwOSCLI::SwOSCLI() {
   _line[0] = '\0';
   _evalPtr = NULL;
   _start   = NULL;
-  _global = new GlobalCommandExecutor();
 }
 
 void SwOSCLI::Error( Error_t error, int expected, int found ) {
@@ -833,7 +832,7 @@ void SwOSCLI::executeI2CCmd( void ) {
 void SwOSCLI::executeIOCommand( void ) {
 
   if (globalCommand) {
-    _global->run(_cmd, _parameter, _maxParameter);
+    runCommand(_cmd, _parameter, _maxParameter);
     return;
   }
 
@@ -846,6 +845,9 @@ void SwOSCLI::executeIOCommand( void ) {
     switch (_io->getIOType() ) {
       case FTSWARM_DIGITALINPUT:
       case FTSWARM_ANALOGINPUT:
+      case FTSWARM_COUNTERINPUT:
+      case FTSWARM_ROTARYINPUT:
+      case FTSWARM_FREQUENCYINPUT:
       case FTSWARM_INPUT:       executeInputCmd(); break;
       case FTSWARM_ACTOR:       executeActorCmd(); break;
       case FTSWARM_JOYSTICK:    executeJoystickCmd(); break;
@@ -888,17 +890,14 @@ bool SwOSCLI::tokenizeCmd( char *cmd ) {
 
 }
 
-bool  SwOSCLI::getIO( char *token, char *IOName, SwOSCtrl **ctrl, SwOSIO **io, bool *global ) {
+bool  SwOSCLI::getIO( char *token, char *IOName, SwOSCtrl **ctrl, SwOSIO **io, bool *glob ) {
   
   SwOSCtrl *_ctrl = NULL;
   SwOSIO   *_io   = NULL;
-  bool globalCommand = false;
   char     *_rollback;
 
-  // if token is "hglob"
   if ( strcmp( token, "hglob" ) == 0 ) {
-    globalCommand = true;
-    
+    *glob = true;
     return true;
   }
 
@@ -939,7 +938,7 @@ bool  SwOSCLI::getIO( char *token, char *IOName, SwOSCtrl **ctrl, SwOSIO **io, b
   // copy resultgetIO
   *ctrl = _ctrl;
   *io   = _io;
-  *global = globalCommand;
+  *glob = false;
 
   return true;
 
@@ -959,7 +958,7 @@ void SwOSCLI::evalIOCommand( char *token ) {
   if (!getIO( token, IOName, &_ctrl, &_io, &globalCommand ) ) { Error( ERROR_IOEXPECTED ); return; }
 
   // unvalid io?
-  if ( ( !_io ) && ( !_ctrl ) ) { Error( ERROR_IOEXPECTED ); return; }
+  if ( ( !_io ) && ( !_ctrl ) && (!globalCommand) ) { Error( ERROR_IOEXPECTED ); return; }
 
   // now we need another "." and a method
   if ( getNextToken( token ) != EVAL_DOT ) { Error( ERROR_DOTEXPECTED ); return; }

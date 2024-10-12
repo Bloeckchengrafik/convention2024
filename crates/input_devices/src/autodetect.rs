@@ -1,16 +1,18 @@
 use std::fmt::Debug;
 use std::future::Future;
 use std::pin::Pin;
+use log::info;
 use pub_sub::PubSub;
 use serialport::SerialPortType;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 use DeviceDriverType::HeadsetGyroscope;
 use messages::VrMessage;
-use crate::autodetect::DeviceDriverType::{Car, SteeringWheel};
+use crate::autodetect::DeviceDriverType::{Car, Pedal, SteeringWheel};
 use crate::drivers::headset::headset_gyroscope::HeadsetGyroscopeDeviceDriver;
 use crate::drivers::{DeviceDriver, IdentifiedDeviceDriver};
 use crate::drivers::swarm::car::CarDriver;
+use crate::drivers::swarm::pedal::PedalDriver;
 use crate::drivers::swarm::steering_wheel::SteeringWheelDriver;
 use crate::drivers::swarm::VrSwarm;
 use crate::InputDevices;
@@ -20,6 +22,7 @@ pub enum DeviceDriverType {
     HeadsetGyroscope,
     SteeringWheel,
     Car,
+    Pedal,
 }
 
 impl DeviceDriverType {
@@ -107,6 +110,7 @@ pub async fn autodetect_input_devices(bus: &PubSub<VrMessage>) -> InputDevices {
 
             let bus = bus.clone();
             drivers.push(HeadsetGyroscope, sync_driver!(HeadsetGyroscopeDeviceDriver::new(port, bus)));
+            info!("Load HeadsetGyroscope");
         } else if port_vendor == "1a86" { // CH341 USB to serial (ftSwarm)
             let vr_swarm = VrSwarm::new(&port_name).await;
 
@@ -116,10 +120,18 @@ pub async fn autodetect_input_devices(bus: &PubSub<VrMessage>) -> InputDevices {
                 drivers.push(SteeringWheel, async_driver!(SteeringWheelDriver::new(vr_swarm, bus)));
             }
 
+            {
+                let vr_swarm = vr_swarm.clone();
+                let bus = bus.clone();
+                drivers.push(Pedal, async_driver!(PedalDriver::new(vr_swarm, bus)));
+                info!("Load Pedal");
+            }
+
             if option_env!("C24_DISABLE_CAR").is_none() {
                 let vr_swarm = vr_swarm.clone();
                 let bus = bus.clone();
                 drivers.push(Car, async_driver!(CarDriver::new(vr_swarm, bus)));
+                info!("Load Car");
             }
 
             swarm = Some(vr_swarm);
@@ -129,7 +141,6 @@ pub async fn autodetect_input_devices(bus: &PubSub<VrMessage>) -> InputDevices {
     InputDevices {
         swarm,
         drivers: drivers.finish(),
-        last_update: std::time::Instant::now(),
         bus: bus.clone(),
     }
 }

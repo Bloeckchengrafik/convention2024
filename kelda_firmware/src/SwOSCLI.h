@@ -54,10 +54,7 @@ typedef enum {
   ERROR_WRONGNUMBEROFARGUMENTS
 } Error_t;
 
-class GlobalCommandExecutor {
-  public:
-    void run( CLICmd_t cmd, SwOSCLIParameter *param, int maxParam );
-};
+void runCommand( CLICmd_t cmd, SwOSCLIParameter *param, int maxParam );
 
 class SwOSCLI {
   protected:
@@ -69,7 +66,6 @@ class SwOSCLI {
     char   *_evalPtr;
     char   *_start;
     bool   globalCommand;
-    GlobalCommandExecutor *_global;
     SwOSIO *_io = NULL;
     SwOSCtrl *_ctrl = NULL;
     CLICmd_t _cmd;

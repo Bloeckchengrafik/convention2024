@@ -3,7 +3,7 @@ import {
     $drvStateReading,
     $fpsReading,
     $gyroReadings,
-    $inferenceReadings, $pedalReadings, $servoReading,
+    $inferenceReadings, $leaderboard, $pedalReadings, $servoReading,
     $vrDistanceConfigurationReadings, $wheelReadings
 } from "./state.ts";
 import {terror, tinfo, tmessage, twarning} from "./toasties.ts";
@@ -27,6 +27,9 @@ export const processors: Partial<Processors> = {
     ModelConfiguration: $inferenceReadings.set,
     PedalState: $pedalReadings.set,
 
+    PushTimerEntry(msg) {
+        $leaderboard.set([...$leaderboard.get(), msg.PushTimerEntry.entry])
+    },
     Log(log) {
         const functions: Record<LogMessage["Log"]["message_type"], (typeof tinfo)> = {
             Debug: tmessage, Error: terror, Info: tinfo, Warning: twarning
@@ -38,6 +41,7 @@ export const processors: Partial<Processors> = {
             VrDistanceConfiguration: {
                 distance_between_b: msg.PushRenderSettings.data.space_between_back,
                 distance_between_f: msg.PushRenderSettings.data.space_between_front,
+                distance_between_u: msg.PushRenderSettings.data.space_between_ui,
                 v_offset: msg.PushRenderSettings.data.v_offset,
             }
         })
@@ -56,6 +60,7 @@ export const processors: Partial<Processors> = {
                 config: msg.PushRenderSettings.data.servo_config
             }
         })
+        $leaderboard.set(msg.PushRenderSettings.data.leaderboard)
         toast.success("Loaded config", {
             dismissible: true,
             richColors: true,

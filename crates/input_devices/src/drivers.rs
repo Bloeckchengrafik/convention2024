@@ -9,7 +9,7 @@ pub enum DriverProcessError {
     DataframeError(String),
     IoError,
     BusError,
-    SwarmError,
+    SwarmError(String, String),
 }
 
 #[async_trait::async_trait]

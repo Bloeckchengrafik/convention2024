@@ -15,6 +15,7 @@ function VrDistanceConfigurationDisplay(props: { setter: (vdfc: VrDistanceConfig
                            VrDistanceConfiguration: {
                                distance_between_f: Number(e.target.value),
                                distance_between_b: vrDistanceConfigurationReading.VrDistanceConfiguration.distance_between_b,
+                               distance_between_u: vrDistanceConfigurationReading.VrDistanceConfiguration.distance_between_u,
                                v_offset: vrDistanceConfigurationReading.VrDistanceConfiguration.v_offset,
                            }
                        })
@@ -26,10 +27,24 @@ function VrDistanceConfigurationDisplay(props: { setter: (vdfc: VrDistanceConfig
                            VrDistanceConfiguration: {
                                distance_between_f: vrDistanceConfigurationReading.VrDistanceConfiguration.distance_between_f,
                                distance_between_b: Number(e.target.value),
+                               distance_between_u: vrDistanceConfigurationReading.VrDistanceConfiguration.distance_between_u,
                                v_offset: vrDistanceConfigurationReading.VrDistanceConfiguration.v_offset,
                            }
                        })
                    }}/> <br/> <br/>
+            <label>x-Distance-UI</label><br/>
+            <input type="range" value={vrDistanceConfigurationReading.VrDistanceConfiguration.distance_between_u}
+                   onChange={(e) => {
+                       setter({
+                           VrDistanceConfiguration: {
+                               distance_between_f: vrDistanceConfigurationReading.VrDistanceConfiguration.distance_between_f,
+                               distance_between_b: vrDistanceConfigurationReading.VrDistanceConfiguration.distance_between_b,
+                               distance_between_u: Number(e.target.value),
+                               v_offset: vrDistanceConfigurationReading.VrDistanceConfiguration.v_offset,
+                           }
+                       })
+                   }}/>
+            <br/> <br/>
             <label>v-Offset</label><br/>
             <input type="range" value={vrDistanceConfigurationReading.VrDistanceConfiguration.v_offset}
                    onChange={(e) => {
@@ -37,10 +52,12 @@ function VrDistanceConfigurationDisplay(props: { setter: (vdfc: VrDistanceConfig
                            VrDistanceConfiguration: {
                                distance_between_f: vrDistanceConfigurationReading.VrDistanceConfiguration.distance_between_f,
                                distance_between_b: vrDistanceConfigurationReading.VrDistanceConfiguration.distance_between_b,
+                               distance_between_u: vrDistanceConfigurationReading.VrDistanceConfiguration.distance_between_u,
                                v_offset: Number(e.target.value),
                            }
                        })
                    }}/>
+
         </div>
     )
 }

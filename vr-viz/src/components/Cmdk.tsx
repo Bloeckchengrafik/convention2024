@@ -11,7 +11,7 @@ import CommandPalette, {
 import {
     copyToClipboard,
     openGyroTab,
-    openInferenceSettingsTab, openOptimizerInfoTab, openServoSettingsTab,
+    openInferenceSettingsTab, openLeaderboardTab, openOptimizerInfoTab, openServoSettingsTab, openUtilitiesTab,
     openVrDistanceConfigurationTab, openWheelReadingTab,
     restoreDefaultLayout
 } from "../dockviewapi.ts";
@@ -51,6 +51,8 @@ function Cmdk(props: { dockview: DockviewApi | undefined }) {
                     view("Wheel Reading", "EllipsisHorizontalCircleIcon", openWheelReadingTab.bind(null, api)),
                     view("Servo Config", "AdjustmentsHorizontalIcon", openServoSettingsTab.bind(null, api)),
                     view("Optimizer Info", "PresentationChartLineIcon", openOptimizerInfoTab.bind(null, api)),
+                    view("Leaderboard", "ClockIcon", openLeaderboardTab.bind(null, api)),
+                    view("Utils", "CommandLineIcon", openUtilitiesTab.bind(null, api)),
                 ],
             },
             {

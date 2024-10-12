@@ -39,3 +39,17 @@ impl TransformSet {
         }
     }
 }
+
+pub fn left_offset_left(offset: &f32) -> Vec2 {
+    Vec2 {
+        x: WIDTH as f32 / 4.0 - offset,
+        y: HEIGHT as f32 / 2.0,
+    }
+}
+
+pub fn right_offset_right(offset: &f32) -> Vec2 {
+    Vec2 {
+        x: WIDTH as f32 * 3.0 / 4.0 + offset,
+        y: HEIGHT as f32 / 2.0,
+    }
+}

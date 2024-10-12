@@ -16,6 +16,7 @@ impl Units {
         Self {
             units: vec![
                 Box::new(unit::pinentry::PinEntry::new(&bus)),
+                Box::new(unit::leaderboard::Leaderboard::new(&bus)),
             ],
         }
     }

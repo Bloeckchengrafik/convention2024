@@ -2,6 +2,7 @@
 #include "ftSwarmRS.h"
 #include "SwOSCLI.h"
 #include "cnDevices.h"
+#include <Wire.h>
 
 #define KELDA
 
@@ -19,13 +20,14 @@ void setup() {
     FtSwarmSerialNumber_t num = ftSwarm.begin();
     cli = new SwOSCLI();
 
+    Wire.begin( 8, 9 );
     beginThrottle();
 
     printf("\n\nRunning ftConvention2024 Special Edition\n\n");
 
 }
 
-void GlobalCommandExecutor::run(CLICmd_t cmd, SwOSCLIParameter *param, int maxParam) {
+void runCommand(CLICmd_t cmd, SwOSCLIParameter *param, int maxParam) {
     switch (cmd)
     {
     case CLICMD_getThrottle:

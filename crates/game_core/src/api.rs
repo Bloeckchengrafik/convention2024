@@ -32,14 +32,14 @@ impl AsyncBus {
         Ok(())
     }
 
-    pub async fn confirm_interface(&mut self) -> anyhow::Result<Interface> {
+    pub async fn confirm_interface(&mut self) -> anyhow::Result<i32> {
         match self.wait_on_message(|m| matches!(m, VrMessage::InterfaceConfirm {..})).await {
             VrMessage::InterfaceConfirm { data } => Ok(data),
             _ => bail!("Unexpected message"),
         }
     }
 
-    pub async fn open_interface_and_confirm(&mut self, interface: Interface) -> anyhow::Result<Interface> {
+    pub async fn open_interface_and_confirm(&mut self, interface: Interface) -> anyhow::Result<i32> {
         self.open_interface(interface).await?;
         self.confirm_interface().await
     }

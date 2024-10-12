@@ -16,15 +16,32 @@ pub struct EyeSettings {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct LeaderboardEntry {
+    pub name: String,
+    pub time: f32,
+    pub id: u32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RenderSettingsData {
     pub left_eye: EyeSettings,
     pub right_eye: EyeSettings,
     pub v_offset: i32,
     pub space_between_back: i32,
     pub space_between_front: i32,
+    #[serde(default)]
+    pub space_between_ui: i32,
     pub model: ModelType,
     pub model_configuration: ModelConfiguration,
-    pub servo_config: ServoConfig
+    pub servo_config: ServoConfig,
+    #[serde(default)]
+    pub pedal_calibration_lower: i32,
+    #[serde(default)]
+    pub pedal_calibration_upper: i32,
+    #[serde(default)]
+    pub speed_mul: f32,
+    #[serde(default)]
+    pub leaderboard: Vec<LeaderboardEntry>,
 }
 
 impl Default for RenderSettingsData {
@@ -41,6 +58,7 @@ impl Default for RenderSettingsData {
             v_offset: 0,
             space_between_back: 0,
             space_between_front: 0,
+            space_between_ui: 0,
             model: ModelType::YoloV8mInt8ONNX,
             model_configuration: ModelConfiguration {
                 confidence: 0.25,
@@ -51,7 +69,11 @@ impl Default for RenderSettingsData {
                 steer_offset: 0,
                 yaw_offset: 0,
                 pitch_offset: 0,
-            }
+            },
+            pedal_calibration_lower: 0,
+            pedal_calibration_upper: 0,
+            speed_mul: 1.0,
+            leaderboard: Vec::new(),
         }
     }
 }
@@ -102,9 +124,7 @@ pub enum DriverState {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Interface {
-    None,
     InputNumberAndConfirm {
-        number: u8,
         text: String,
     },
 }
@@ -121,6 +141,7 @@ pub enum VrMessage {
     VrDistanceConfiguration {
         distance_between_b: i32,
         distance_between_f: i32,
+        distance_between_u: i32,
         v_offset: i32,
     },
     ModelConfiguration {
@@ -160,7 +181,7 @@ pub enum VrMessage {
         interface: Interface
     },
     InterfaceConfirm {
-        data: Interface
+        data: i32
     },
     AskPin {
         length: u8,
@@ -170,5 +191,15 @@ pub enum VrMessage {
     },
     SetServoConfig {
         config: ServoConfig,
+    },
+    TimerStart {
+        name: String,
+    },
+    TimerEnd {},
+    PushTimerEntry {
+        entry: LeaderboardEntry
+    },
+    DeleteTimerEntry {
+        id: u32
     },
 }

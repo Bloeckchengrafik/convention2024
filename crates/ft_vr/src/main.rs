@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use log::LevelFilter;
 use pub_sub::PubSub;
 use tokio::time::sleep;
@@ -25,7 +25,7 @@ fn init_logging() {
         .filter_module("wgpu", LevelFilter::Warn)
         .filter_module("wgpu_hal", LevelFilter::Warn)
         .filter_module("wgpu_core", LevelFilter::Warn)
-        .filter_module("ftswarm_serial", LevelFilter::Warn)
+        // .filter_module("ftswarm_serial", LevelFilter::Warn)
         .filter_module("winit", LevelFilter::Warn)
         .filter_module("gilrs", LevelFilter::Warn)
         .filter_module("mio", LevelFilter::Warn)
@@ -36,6 +36,8 @@ fn init_logging() {
 
 async fn input_device_loop(bus: PubSub<VrMessage>) {
     let mut input_devices = InputDevices::new(&bus).await;
+    let states = input_devices.driver_states();
+    let mut last_update = Instant::now();
     let mut device_drivers = input_devices.build().await;
     loop {
         let mut errors = vec![];
@@ -47,10 +49,16 @@ async fn input_device_loop(bus: PubSub<VrMessage>) {
 
         for e in errors {
             let err = format!("Error processing input devices: {:?}", e);
+            error!("{}", err);
             let _ = bus.send(VrMessage::Log { message: err, message_type: LogMessageType::Error });
         }
 
-        input_devices.process().await;
+        if last_update.elapsed().as_secs() > 1 {
+            last_update = Instant::now();
+            let _ = bus.send(VrMessage::DriverStateUpdate {
+                states: states.clone()
+            });
+        }
 
         sleep(Duration::from_millis(40)).await;
     }

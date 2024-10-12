@@ -134,6 +134,18 @@ select option {
     color: #d4d4d4;
 }
 
+input[type=text] {
+    width: 100%;
+    max-width: 300px; /* Adjust as needed */
+    padding: 10px;
+    background-color: #333;
+    color: #d4d4d4;
+    border: 1px solid #1e1e1e;
+    border-radius: 5px;
+    appearance: none; /* Hides default arrow */
+    cursor: pointer;
+}
+
 .lr-container {
     display: flex;
     flex-wrap: wrap;

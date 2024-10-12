@@ -10,6 +10,7 @@
     v_offset: 0,
     space_between_back: 0,
     space_between_front: 0,
+    space_between_ui: 0,
     model: YoloV11sFullONNX,
     model_configuration: (
         confidence: 0.32,
@@ -17,8 +18,18 @@
         kconf: 0.55,
     ),
     servo_config: (
-        steer_offset: 0,
-        yaw_offset: 0,
-        pitch_offset: 0,
+        steer_offset: 126,
+        yaw_offset: 121,
+        pitch_offset: 120,
     ),
+    pedal_calibration_lower: 1407,
+    pedal_calibration_upper: 1494,
+    speed_mul: 1.0,
+    leaderboard: [
+        (
+            name: "chris",
+            time: 1.2680526,
+            id: 1,
+        ),
+    ],
 )

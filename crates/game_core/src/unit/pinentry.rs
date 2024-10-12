@@ -25,15 +25,10 @@ impl PinEntry {
         let mut pin = String::new();
         for _ in 0..pin_len {
             let data = self.async_bus.open_interface_and_confirm(Interface::InputNumberAndConfirm {
-                number: 0,
                 text: format!("PIN: {}", pin),
             }).await?;
 
-            if let Interface::InputNumberAndConfirm { number, .. } = data {
-                pin.push_str(&number.to_string());
-            } else {
-                bail!("Unexpected interface");
-            }
+            pin.push_str(&data.to_string());
         }
 
         Ok(pin)

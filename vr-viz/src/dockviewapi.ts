@@ -37,6 +37,18 @@ const optimizerSettings = {
     "title": "Optimizer Info",
 }
 
+const leaderboardSettings = {
+    "id": "ldbd",
+    "component": "ldbd",
+    "title": "Leaderboard",
+}
+
+const utilsSettings = {
+    "id": "util",
+    "component": "util",
+    "title": "Utilities",
+}
+
 function openOrCreatePanel(api: DockviewApi, panelDefinition: AddPanelOptions) {
     const panelId = panelDefinition.id;
     const panel = api.getPanel(panelId);
@@ -72,6 +84,14 @@ export function openOptimizerInfoTab(api: DockviewApi) {
     openOrCreatePanel(api, optimizerSettings);
 }
 
+export function openLeaderboardTab(api: DockviewApi) {
+    openOrCreatePanel(api, leaderboardSettings);
+}
+
+export function openUtilitiesTab(api: DockviewApi) {
+    openOrCreatePanel(api, utilsSettings);
+}
+
 export function copyToClipboard(api: DockviewApi) {
     const json = api.toJSON();
     navigator.clipboard.writeText(JSON.stringify(json, null, 2)).then(() => console.log("Copied to clipboard"));
@@ -101,7 +121,7 @@ export function restoreDefaultLayout(api: DockviewApi) {
                                             "activeView": "gyro",
                                             "id": "1"
                                         },
-                                        "size": 960
+                                        "size": 640
                                     },
                                     {
                                         "type": "leaf",
@@ -112,10 +132,21 @@ export function restoreDefaultLayout(api: DockviewApi) {
                                             "activeView": "whl",
                                             "id": "4"
                                         },
-                                        "size": 960
+                                        "size": 640
+                                    },
+                                    {
+                                        "type": "leaf",
+                                        "data": {
+                                            "views": [
+                                                "ldbd"
+                                            ],
+                                            "activeView": "ldbd",
+                                            "id": "7"
+                                        },
+                                        "size": 640
                                     }
                                 ],
-                                "size": 601
+                                "size": 589
                             },
                             {
                                 "type": "branch",
@@ -129,7 +160,7 @@ export function restoreDefaultLayout(api: DockviewApi) {
                                             "activeView": "vrdc",
                                             "id": "2"
                                         },
-                                        "size": 480
+                                        "size": 384
                                     },
                                     {
                                         "type": "leaf",
@@ -140,7 +171,7 @@ export function restoreDefaultLayout(api: DockviewApi) {
                                             "activeView": "srvo",
                                             "id": "6"
                                         },
-                                        "size": 480
+                                        "size": 384
                                     },
                                     {
                                         "type": "leaf",
@@ -151,7 +182,7 @@ export function restoreDefaultLayout(api: DockviewApi) {
                                             "activeView": "infr",
                                             "id": "3"
                                         },
-                                        "size": 480
+                                        "size": 384
                                     },
                                     {
                                         "type": "leaf",
@@ -162,19 +193,30 @@ export function restoreDefaultLayout(api: DockviewApi) {
                                             "activeView": "optm",
                                             "id": "5"
                                         },
-                                        "size": 480
+                                        "size": 384
+                                    },
+                                    {
+                                        "type": "leaf",
+                                        "data": {
+                                            "views": [
+                                                "util"
+                                            ],
+                                            "activeView": "util",
+                                            "id": "8"
+                                        },
+                                        "size": 384
                                     }
                                 ],
-                                "size": 339
+                                "size": 333
                             }
                         ],
                         "size": 1920
                     }
                 ],
-                "size": 940
+                "size": 922
             },
             "width": 1920,
-            "height": 940,
+            "height": 922,
             "orientation": Orientation.HORIZONTAL
         },
         "panels": {
@@ -188,10 +230,20 @@ export function restoreDefaultLayout(api: DockviewApi) {
                 "contentComponent": "whl",
                 "title": "Wheel Reading"
             },
+            "ldbd": {
+                "id": "ldbd",
+                "contentComponent": "ldbd",
+                "title": "Leaderboard"
+            },
             "vrdc": {
                 "id": "vrdc",
                 "contentComponent": "vrdc",
                 "title": "VR Distance Configuration"
+            },
+            "srvo": {
+                "id": "srvo",
+                "contentComponent": "srvo",
+                "title": "Servo Settings"
             },
             "infr": {
                 "id": "infr",
@@ -203,12 +255,12 @@ export function restoreDefaultLayout(api: DockviewApi) {
                 "contentComponent": "optm",
                 "title": "Optimizer Info"
             },
-            "srvo": {
-                "id": "srvo",
-                "contentComponent": "srvo",
-                "title": "Servo Settings"
+            "util": {
+                "id": "util",
+                "contentComponent": "util",
+                "title": "Utilities"
             }
         },
-        "activeGroup": "4"
+        "activeGroup": "8"
     })
 }

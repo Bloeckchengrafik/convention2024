@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use ftswarm::prelude::{Io, Motor, Servo, SwarmObject};
+use log::info;
 use pub_sub::{PubSub, Subscription};
 use messages::file_config::{read_config, save_config};
 use messages::VrMessage;
@@ -22,6 +23,15 @@ pub struct CarDriver {
     old_offset_cam_pitch: i32,
     interface_open: bool,
     last_write: std::time::Instant,
+    mapped_steer: i32,
+    final_pitch: i32,
+    final_yaw: i32,
+    throttle: i32,
+    reverse: bool,
+    last_yaw: i32,
+    last_pitch: i32,
+    last_throttle: i32,
+    last_steering: i32,
 }
 
 impl CarDriver {
@@ -41,6 +51,15 @@ impl CarDriver {
             old_offset_cam_pitch: 0,
             interface_open: false,
             last_write: std::time::Instant::now(),
+            mapped_steer: 0,
+            final_pitch: 0,
+            final_yaw: 0,
+            throttle: 0,
+            last_throttle: 0,
+            last_yaw: 0,
+            last_pitch: 0,
+            last_steering: 0,
+            reverse: false,
             swarm,
         })
     }
@@ -76,19 +95,8 @@ impl DeviceDriver for CarDriver {
 
                     let avg_yaw = self.last_5_yaws.iter().sum::<f32>() / 5.0;
                     let avg_pitch = self.last_5_pitches.iter().sum::<f32>() / 5.0;
-                    let mapped_steer = Self::remap(avg_yaw, -200.0, 200.0, -90.0, 90.0) as i32;
-
-                    let final_yaw = Self::clamp(avg_yaw, -90.0, 90.0) as i32;
-                    let final_pitch = Self::clamp(avg_pitch, -90.0, 90.0) as i32;
-
-                    let now = std::time::Instant::now();
-                    if now.duration_since(self.last_write).as_millis() > 100 {
-                        self.steering_servo.lock().await.set_position(mapped_steer).await.map_err(|_| DriverProcessError::SwarmError)?;
-                        self.cam_yaw_servo.lock().await.set_position(final_yaw).await.map_err(|_| DriverProcessError::SwarmError)?;
-                        self.cam_pitch_servo.lock().await.set_position(final_pitch).await.map_err(|_| DriverProcessError::SwarmError)?;
-                        self.last_write = now;
-                    }
-
+                    self.final_yaw = Self::remap(avg_yaw, -1.5, 1.5, -90.0, 90.0) as i32;
+                    self.final_pitch = Self::remap(avg_pitch, -1.5, 1.5, -90.0, 90.0) as i32;
                 }
                 VrMessage::ShowRenderedInterface { .. } => {
                     self.interface_open = true;
@@ -96,8 +104,19 @@ impl DeviceDriver for CarDriver {
                 VrMessage::InterfaceConfirm { .. } => {
                     self.interface_open = false;
                 }
-                VrMessage::WheelState { rotation, .. } => {
+                VrMessage::WheelState { rotation, left_button, right_button, .. } => {
                     self.wheel_pos = rotation;
+
+                    self.mapped_steer = Self::remap(self.wheel_pos as f32, 0.0, 200.0, 0.0, 180.0) as i32;
+
+                    if left_button || right_button {
+                        self.reverse = true;
+                    } else {
+                        self.reverse = false;
+                    }
+                }
+                VrMessage::PedalState { pressed } => {
+                    self.throttle = ((pressed as f32) * 1.5) as i32;
                 }
                 VrMessage::SetServoConfig { config } => {
                     let mut fileconfig = read_config();
@@ -108,6 +127,38 @@ impl DeviceDriver for CarDriver {
             }
         }
 
+
+        let now = std::time::Instant::now();
+        if now.duration_since(self.last_write).as_millis() > 100 &&!self.interface_open {
+            if self.last_pitch != self.final_pitch {
+                self.last_pitch = self.final_pitch;
+                self.cam_pitch_servo.lock().await.set_position(self.final_pitch).await.map_err(|it| DriverProcessError::SwarmError("pitch_set".into(), it))?;
+            }
+
+            if self.last_yaw != self.final_yaw {
+                self.last_yaw = self.final_yaw;
+                self.cam_yaw_servo.lock().await.set_position(self.final_yaw).await.map_err(|it| DriverProcessError::SwarmError("yaw_set".into(), it))?;
+            }
+
+            if self.last_steering != self.mapped_steer {
+                self.last_steering = self.mapped_steer;
+                self.steering_servo.lock().await.set_position(self.mapped_steer).await.map_err(|it| DriverProcessError::SwarmError("steer_set".into(), it))?;
+            }
+
+            let final_throttle = if self.reverse {
+                -self.throttle
+            } else {
+                self.throttle
+            };
+
+            if self.last_throttle != final_throttle {
+                self.last_throttle = final_throttle;
+                self.throttle_motor.lock().await.set(final_throttle).await.map_err(|it| DriverProcessError::SwarmError("throttle_set".into(), it))?;
+            }
+
+            self.last_write = now;
+        }
+
         let config = read_config();
         let new_offset_steer = config.servo_config.steer_offset;
         let new_offset_cam_yaw = config.servo_config.yaw_offset;
@@ -115,17 +166,17 @@ impl DeviceDriver for CarDriver {
         {
             if new_offset_steer != self.old_offset_steer {
                 self.old_offset_steer = new_offset_steer;
-                self.steering_servo.lock().await.set_offset(new_offset_steer).await.map_err(|_| DriverProcessError::SwarmError)?;
+                self.steering_servo.lock().await.set_offset(new_offset_steer).await.map_err(|it| DriverProcessError::SwarmError("steer_offset".into(), it))?;
             }
 
             if new_offset_cam_yaw != self.old_offset_cam_yaw {
                 self.old_offset_cam_yaw = new_offset_cam_yaw;
-                self.cam_yaw_servo.lock().await.set_offset(new_offset_cam_yaw).await.map_err(|_| DriverProcessError::SwarmError)?;
+                self.cam_yaw_servo.lock().await.set_offset(new_offset_cam_yaw).await.map_err(|it| DriverProcessError::SwarmError("yaw_offset".into(), it))?;
             }
 
             if new_offset_cam_pitch != self.old_offset_cam_pitch {
                 self.old_offset_cam_pitch = new_offset_cam_pitch;
-                self.cam_pitch_servo.lock().await.set_offset(new_offset_cam_pitch).await.map_err(|_| DriverProcessError::SwarmError)?;
+                self.cam_pitch_servo.lock().await.set_offset(new_offset_cam_pitch).await.map_err(|it| DriverProcessError::SwarmError("pitch_offset".into(), it))?;
             }
         }
         Ok(())

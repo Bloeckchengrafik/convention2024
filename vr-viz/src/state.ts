@@ -1,7 +1,7 @@
 import {
     DriverStateUpdate,
     FPSUpdate,
-    GyroMessage,
+    GyroMessage, LeaderboardEntry,
     ModelConfiguration, PedalState, ServoConfiguration,
     VrDistanceConfiguration,
     WheelState
@@ -13,7 +13,7 @@ export const $gyroReadings = atom<GyroMessage>({
 });
 
 export const $vrDistanceConfigurationReadings = atom<VrDistanceConfiguration>({
-    VrDistanceConfiguration: {v_offset: 0, distance_between_b: 0, distance_between_f: 0}
+    VrDistanceConfiguration: {v_offset: 0, distance_between_b: 0, distance_between_f: 0, distance_between_u: 0}
 });
 
 export const $inferenceReadings = atom<ModelConfiguration>({
@@ -52,3 +52,5 @@ export const $servoReading = atom<ServoConfiguration>({
         }
     }
 });
+
+export const $leaderboard = atom<LeaderboardEntry[]>([]);

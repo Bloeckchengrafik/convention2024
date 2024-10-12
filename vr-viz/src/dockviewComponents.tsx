@@ -1,12 +1,14 @@
 import {DebouncedState} from "use-debounce";
 import {GyroReadingDisplay} from "./views/GyroReadingDisplay.tsx";
 import VrDistanceConfigurationDisplay from "./views/VrDistanceConfigurationDisplay.tsx";
-import {$inferenceReadings, $vrDistanceConfigurationReadings} from "./state.ts";
+import {$inferenceReadings, $servoReading, $vrDistanceConfigurationReadings} from "./state.ts";
 import InferenceConfigurationDisplay from "./views/InferenceConfigurationDisplay.tsx";
 import {SendJsonMessage} from "react-use-websocket/dist/lib/types";
 import {WheelReadingDisplay} from "./views/WheelReadingDisplay.tsx";
 import ServoConfigurationDisplay from "./views/ServoConfigurationDisplay.tsx";
 import OptimizerInfoDisplay from "./views/OptimizerInfoDisplay.tsx";
+import LeaderboardDisplay from "./views/LeaderboardDisplay.tsx";
+import UtilitiesDisplay from "./views/Utilities.tsx";
 
 export function DockviewComponents(useSetter: () => DebouncedState<SendJsonMessage>, setter: SendJsonMessage) {
     const vrSetter = useSetter();
@@ -29,7 +31,12 @@ export function DockviewComponents(useSetter: () => DebouncedState<SendJsonMessa
         }}/>,
 
         "whl": () => <WheelReadingDisplay write={setter} />,
-        "srvo": () => <ServoConfigurationDisplay setter={servoSetter} />,
-        "optm": () => <OptimizerInfoDisplay />
+        "srvo": () => <ServoConfigurationDisplay setter={(v) => {
+            servoSetter(v)
+            $servoReading.set(v);
+        }} />,
+        "optm": () => <OptimizerInfoDisplay  setter={setter}/>,
+        "ldbd": () => <LeaderboardDisplay setter={setter}/>,
+        "util": () => <UtilitiesDisplay setter={setter}/>
     }
 }

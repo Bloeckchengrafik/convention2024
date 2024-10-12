@@ -5,11 +5,12 @@ mod segmentation;
 mod models;
 mod imgstream;
 
-use std::fmt::{Debug, Formatter};
+use std::fmt::{format, Debug, Formatter};
 use std::time::Instant;
 use ggez::{Context, GameResult};
 use ggez::conf::{FullscreenType, WindowMode, WindowSetup};
 use ggez::event::{EventHandler, EventLoop};
+use ggez::glam::Vec2;
 use ggez::graphics::{self, Color, DrawParam, Image, Transform};
 use ggez::mint::{Point2, Vector2};
 use log::error;
@@ -19,7 +20,7 @@ use messages::{Interface, LogMessageType, RenderSettingsData, VrMessage};
 use crate::image_loader::{dynamic_to_ggez, ImageLoader};
 use crate::image_post_processing::postprocess;
 use messages::file_config::{read_config, save_config};
-use crate::transform::TransformSet;
+use crate::transform::{left_offset_left, right_offset_right, TransformSet};
 
 pub struct Images {
     pub left_back: Image,
@@ -41,7 +42,8 @@ struct MainWindowState {
     fps_buf_idx: usize,
     interface: Option<Interface>,
     whl_rot: i128,
-    whl_btn: bool
+    whl_btn: bool,
+    last_whl_btn: bool,
 }
 
 
@@ -54,8 +56,12 @@ impl Debug for MainWindowState {
 }
 
 impl MainWindowState {
-    pub fn new(_: &mut Context, pub_sub: PubSub<VrMessage>) -> Self {
+    pub fn new(ctx: &mut Context, pub_sub: PubSub<VrMessage>) -> Self {
         let config = read_config();
+        ctx.gfx.add_font(
+            "Arial",
+            graphics::FontData::from_slice(include_bytes!("../../../Arial.ttf")).unwrap(),
+        );
 
         MainWindowState {
             loader: ImageLoader::new(),
@@ -69,7 +75,8 @@ impl MainWindowState {
             fps_buf_idx: 0,
             interface: None,
             whl_rot: 0,
-            whl_btn: false
+            whl_btn: false,
+            last_whl_btn: false,
         }
     }
 
@@ -77,9 +84,10 @@ impl MainWindowState {
     fn process_bus(&mut self) {
         while let Ok(message) = self.subscription.try_recv() {
             match message {
-                VrMessage::VrDistanceConfiguration { distance_between_b, distance_between_f, v_offset } => {
+                VrMessage::VrDistanceConfiguration { distance_between_b, distance_between_f, v_offset, distance_between_u } => {
                     self.settings.space_between_back = distance_between_b;
                     self.settings.space_between_front = distance_between_f;
+                    self.settings.space_between_ui = distance_between_u;
                     self.settings.v_offset = v_offset;
                     save_config(&self.settings);
                 }
@@ -127,6 +135,17 @@ impl MainWindowState {
 
         tracy_client::frame_mark();
     }
+
+    fn draw_input_number(&mut self, ctx: &mut Context, canvas: &mut graphics::Canvas, text: String, pos: Vec2) -> GameResult {
+        let chosen_number = ((self.whl_rot / 20) % 10).abs();
+        canvas.draw(
+            graphics::Text::new(format!("{}{}\n<-> Rad | [x] Taster", text, chosen_number))
+                .set_font("Arial")
+                .set_scale(12.)
+            , pos);
+
+        Ok(())
+    }
 }
 
 impl EventHandler for MainWindowState {
@@ -157,6 +176,22 @@ impl EventHandler for MainWindowState {
                 });
             });
 
+        if self.whl_btn && !self.last_whl_btn {
+            let number = ((self.whl_rot / 20) % 10).abs();
+            if let Some(interface) = &self.interface {
+                match interface {
+                    Interface::InputNumberAndConfirm { .. } => {
+                        let _ = self.msgbus.send(VrMessage::InterfaceConfirm {
+                            data: number as i32,
+                        });
+
+                        self.interface = None;
+                    }
+                }
+            }
+        };
+
+        self.last_whl_btn = self.whl_btn;
 
         Ok(())
     }
@@ -202,6 +237,19 @@ impl EventHandler for MainWindowState {
                 },
                 ..Default::default()
             });
+        }
+
+        if let Some(interface) = &self.interface {
+            match interface {
+                Interface::InputNumberAndConfirm { text } => {
+                    let left = left_offset_left(&(self.settings.space_between_ui as f32));
+                    let right = right_offset_right(&(self.settings.space_between_ui as f32));
+                    let text = text.clone();
+
+                    self.draw_input_number(ctx, &mut canvas, text.clone(), left)?;
+                    self.draw_input_number(ctx, &mut canvas, text.clone(), right)?;
+                }
+            }
         }
 
         self.finish_frame();
